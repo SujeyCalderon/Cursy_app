@@ -46,7 +46,7 @@ class AppContainer {
         level = HttpLoggingInterceptor.Level.BODY
     }
 
-    // Interceptor que agrega el header de Authorization
+    // Interceptor que agrega el header de Authorizacion
     private val authInterceptor = Interceptor { chain ->
         val originalRequest = chain.request()
         val requestBuilder = originalRequest.newBuilder()
@@ -71,6 +71,7 @@ class AppContainer {
         .addConverterFactory(GsonConverterFactory.create())
         .build()
 
+    //Interfaz de la API generada por Retrofit
     val coursyApi: CoursyApi by lazy {
         retrofit.create(CoursyApi::class.java)
     }
