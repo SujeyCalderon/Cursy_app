@@ -10,6 +10,15 @@ import com.example.cursy.features.profile.domain.repository.ProfileRepository
 
 class ProfileRepositoryImpl(private val api: CoursyApi) : ProfileRepository {
 
+    override suspend fun login(email: String, password: String): Result<com.example.cursy.core.network.LoginResponse> {
+        return try {
+            val response = api.login(com.example.cursy.core.network.LoginRequest(email, password))
+            Result.success(response)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
     override suspend fun getMyProfile(): Result<Profile> {
         return try {
             val response = api.getMyProfile()

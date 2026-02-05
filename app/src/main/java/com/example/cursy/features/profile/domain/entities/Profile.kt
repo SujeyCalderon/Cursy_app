@@ -3,7 +3,7 @@ package com.example.cursy.features.profile.domain.entities
 data class Profile(
     val id: String,
     val name: String,
-    val password: String,
+    val password: String? = null,
     val email: String,
     val profileImage: String,
     val bio: String,

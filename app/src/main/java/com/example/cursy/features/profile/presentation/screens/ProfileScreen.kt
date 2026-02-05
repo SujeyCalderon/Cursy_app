@@ -122,7 +122,7 @@ fun ProfileScreen(
                             name = uiState.profile!!.name,
                             bio = uiState.profile!!.bio,
                             profileImage = uiState.profile!!.profileImage,
-                            university = uiState.profile!!.university.ifEmpty { "Universidad Nacional" },
+                            university = uiState.profile!!.university,
                             onEditClick = onEditProfileClick
                         )
                     }
@@ -224,24 +224,26 @@ fun ProfileHeader(
                     )
                 }
 
-                Spacer(modifier = Modifier.height(6.dp))
+                if (university.isNotEmpty()) {
+                    Spacer(modifier = Modifier.height(6.dp))
 
-                Row(
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(
-                        Icons.Default.School,
-                        contentDescription = null,
-                        tint = GreenPrimary,
-                        modifier = Modifier.size(16.dp)
-                    )
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text(
-                        text = university,
-                        fontSize = 13.sp,
-                        color = GreenPrimary,
-                        fontWeight = FontWeight.Medium
-                    )
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            Icons.Default.School,
+                            contentDescription = null,
+                            tint = GreenPrimary,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = university,
+                            fontSize = 13.sp,
+                            color = GreenPrimary,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
                 }
             }
         }

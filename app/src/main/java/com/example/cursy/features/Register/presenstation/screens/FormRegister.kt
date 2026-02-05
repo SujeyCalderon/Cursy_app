@@ -2,6 +2,8 @@ package com.example.cursy.features.Register.presenstation.screens
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -11,7 +13,9 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
@@ -22,9 +26,14 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Snackbar
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.mutableStateOf
@@ -55,6 +64,8 @@ import androidx.compose.foundation.layout.Box
 @Composable
 fun FormRegister(
     appContainer: AppContainer,
+    onRegisterSuccess: () -> Unit = {},
+    onNavigateToLogin: () -> Unit = {},
     viewModel: RegisterViewModel = viewModel(
 factory = RegisterViewModelFactory(appContainer.registerProfileUseCase)
 )){
@@ -66,12 +77,34 @@ factory = RegisterViewModelFactory(appContainer.registerProfileUseCase)
     val message by viewModel.message.collectAsStateWithLifecycle()
     val error by viewModel.error.collectAsStateWithLifecycle()
 
+    val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(30.dp)
-    ) {
+    // Show snackbar when error changes
+    LaunchedEffect(error) {
+        if (error.isNotEmpty()) {
+            snackbarHostState.showSnackbar(error)
+        }
+    }
+
+    Scaffold(
+        snackbarHost = {
+            SnackbarHost(hostState = snackbarHostState) { data ->
+                Snackbar(
+                    snackbarData = data,
+                    containerColor = Color(0xFFE74C3C),
+                    contentColor = Color.White
+                )
+            }
+        }
+    ) { paddingValues ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+                .padding(30.dp)
+                .verticalScroll(rememberScrollState())
+        ) {
 
         IconButton(onClick = { /* acción */ }) {
             Icon(Icons.Default.ArrowBack, contentDescription = "Volver")
@@ -110,7 +143,7 @@ factory = RegisterViewModelFactory(appContainer.registerProfileUseCase)
             Spacer(modifier = Modifier.height(10.dp))
 
             Text(
-                "Unete a la red universitaria de intercambio",
+                "Únete a la red universitaria de intercambio",
                 fontSize = 17.sp
             )
 
@@ -146,7 +179,7 @@ factory = RegisterViewModelFactory(appContainer.registerProfileUseCase)
             OutlinedTextField(
                 value = email,
                 onValueChange = viewModel::onEmailChange,
-                placeholder = { Text("usuario@universidad.edu") },
+                placeholder = { Text("usuario@gmail.com") },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(15.dp)
             )
@@ -224,7 +257,7 @@ factory = RegisterViewModelFactory(appContainer.registerProfileUseCase)
                     viewModel.onRegister()
                 },
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFF5159F9),
+                    containerColor = Color(0xFF2ECC71),
                     contentColor = Color.White
                 ),
                 shape = RoundedCornerShape(10.dp)
@@ -239,6 +272,13 @@ factory = RegisterViewModelFactory(appContainer.registerProfileUseCase)
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier.padding(top = 12.dp)
                 )
+                // Trigger navigation to login after successful registration
+                androidx.compose.runtime.LaunchedEffect(message) {
+                    if (message.isNotEmpty()) {
+                        kotlinx.coroutines.delay(1500)
+                        onRegisterSuccess()
+                    }
+                }
             }
 
             if (error.isNotEmpty()) {
@@ -250,9 +290,31 @@ factory = RegisterViewModelFactory(appContainer.registerProfileUseCase)
                 )
             }
 
-
-
         }
+
+        Spacer(modifier = Modifier.height(40.dp))
+
+        // Already have account - navigate to login (moved outside inner Column)
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 20.dp),
+            horizontalArrangement = Arrangement.Center
+        ) {
+            Text(
+                text = "¿Ya tienes cuenta? ",
+                fontSize = 14.sp,
+                color = Color.Gray
+            )
+            Text(
+                text = "Inicia sesión",
+                fontSize = 14.sp,
+                color = Color(0xFF2ECC71),
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.clickable { onNavigateToLogin() }
+            )
+        }
+    }
     }
 }
 

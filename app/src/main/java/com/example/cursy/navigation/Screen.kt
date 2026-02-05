@@ -1,6 +1,8 @@
 package com.example.cursy.navigation
 
 sealed class Screen(val route: String) {
+    object Login : Screen("login")
+    object Register : Screen("register")
     object Feed : Screen("feed")
     object Profile : Screen("profile")
     object Settings : Screen("settings")
