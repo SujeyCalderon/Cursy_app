@@ -60,6 +60,9 @@ interface CoursyApi {
 
     @PUT("profile")
     suspend fun updateProfile(@Body request: UpdateProfileRequest): MessageResponse
+
+    @DELETE("auth/account")
+    suspend fun deleteAccount(): MessageResponse
 }
 
 data class LoginRequest(

@@ -48,6 +48,25 @@ class RegisterViewModel(
     }
 
     fun onRegister() {
+        // Validations
+        if (_name.value.isBlank()) {
+            _error.value = "Por favor, ingresa tu nombre"
+            return
+        }
+        if (_email.value.isBlank()) {
+            _error.value = "Por favor, ingresa tu correo electrónico"
+            return
+        }
+        if (!android.util.Patterns.EMAIL_ADDRESS.matcher(_email.value).matches()) {
+            _error.value = "Por favor, ingresa un correo electrónico válido"
+            return
+        }
+        if (_password.value.length < 8) {
+            _error.value = "La contraseña debe tener al menos 8 caracteres"
+            return
+        }
+
+        _error.value = ""
         viewModelScope.launch {
             try {
                 registerProfileUseCase(
@@ -59,7 +78,7 @@ class RegisterViewModel(
                 )
                 _message.value = "Registro exitoso"
             } catch (e: Exception) {
-                _message.value = "Error con el registro: ${e.message}"
+                _error.value = "Error con el registro: ${e.message}"
             }
         }
     }

@@ -39,6 +39,8 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.compose.ui.Alignment
 import com.example.cursy.features.settings.presentation.screens.SettingsScreen
+import com.example.cursy.features.login.presentation.screens.LoginScreen
+import com.example.cursy.features.Register.presenstation.screens.FormRegister
 import kotlinx.coroutines.launch
 
 private val GreenPrimary = Color(0xFF2ECC71)
@@ -70,9 +72,42 @@ fun AppNavigation(
     ) { innerPadding ->
         NavHost(
             navController = navController,
-            startDestination = Screen.Feed.route,
+            startDestination = Screen.Login.route,
             modifier = Modifier.padding(innerPadding)
         ) {
+            // Login
+            composable(Screen.Login.route) {
+                LoginScreen(
+                    appContainer = appContainer,
+                    onLoginSuccess = { token, userId ->
+                        appContainer.setAuthToken(token)
+                        appContainer.setCurrentUserId(userId)
+                        navController.navigate(Screen.Feed.route) {
+                            popUpTo(Screen.Login.route) { inclusive = true }
+                        }
+                    },
+                    onNavigateToRegister = {
+                        navController.navigate(Screen.Register.route)
+                    },
+                    onClose = { /* No action for now */ }
+                )
+            }
+
+            // Register
+            composable(Screen.Register.route) {
+                FormRegister(
+                    appContainer = appContainer,
+                    onRegisterSuccess = {
+                        navController.navigate(Screen.Login.route) {
+                            popUpTo(Screen.Register.route) { inclusive = true }
+                        }
+                    },
+                    onNavigateToLogin = {
+                        navController.popBackStack()
+                    }
+                )
+            }
+
             // Feed
             composable(Screen.Feed.route) {
                 val viewModel: FeedViewModel = viewModel(
@@ -183,12 +218,28 @@ fun AppNavigation(
                 SettingsScreen(
                     onNavigateBack = { navController.popBackStack() },
                     onLogout = {
-                        navController.navigate(Screen.Feed.route) {
+                        // Clear auth token
+                        appContainer.setAuthToken("")
+                        appContainer.setCurrentUserId("")
+                        // Navigate to Login and clear back stack
+                        navController.navigate(Screen.Login.route) {
                             popUpTo(0) { inclusive = true }
                         }
                     },
                     onDeleteAccount = {
-                        // TODO: Delete account API call
+                        // Delete account and navigate to Login
+                        scope.launch {
+                            try {
+                                appContainer.coursyApi.deleteAccount()
+                                appContainer.setAuthToken("")
+                                appContainer.setCurrentUserId("")
+                                navController.navigate(Screen.Login.route) {
+                                    popUpTo(0) { inclusive = true }
+                                }
+                            } catch (e: Exception) {
+                                Log.e("Settings", "Error deleting account: ${e.message}")
+                            }
+                        }
                     },
                     isDarkMode = isDarkMode,
                     onToggleDarkMode = onToggleDarkMode
