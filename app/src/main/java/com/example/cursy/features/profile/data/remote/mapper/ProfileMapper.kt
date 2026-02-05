@@ -11,6 +11,7 @@ fun ProfileResponse.toDomain(): Profile {
         id = user.id,
         name = user.name,
         email = user.email,
+        password = user.password,
         profileImage = user.profileImage ?: "",
         bio = user.bio ?: "",
         university = user.university ?: "",

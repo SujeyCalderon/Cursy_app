@@ -14,7 +14,7 @@ interface CoursyApi {
     suspend fun login(@Body request: LoginRequest): LoginResponse
 
     @POST("auth/register")
-    suspend fun register(@Body request: RegisterRequest): LoginResponse
+    suspend fun register(@Body request: RegisterRequest): RegisterRequest
 
     @GET("courses")
     suspend fun getFeed(): FeedResponse
