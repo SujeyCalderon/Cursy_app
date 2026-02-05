@@ -15,6 +15,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.example.cursy.core.di.AppContainer
 import com.example.cursy.core.network.LoginRequest
+import com.example.cursy.features.Register.presenstation.screens.FormRegister
 import com.example.cursy.navigation.AppNavigation
 import com.example.cursy.ui.theme.CursyTheme
 import kotlinx.coroutines.launch
@@ -35,6 +36,7 @@ class MainActivity : ComponentActivity() {
         val savedDarkMode = prefs.getBoolean("dark_mode", false)
 
         setContent {
+            /*
             var isDarkMode by remember { mutableStateOf(savedDarkMode) }
             var isLoggedIn by remember { mutableStateOf(false) }
             var isLoading by remember { mutableStateOf(true) }
@@ -153,6 +155,8 @@ class MainActivity : ComponentActivity() {
                     }
                 }
             }
+            */
+            FormRegister(appContainer = appContainer)
         }
     }
 }

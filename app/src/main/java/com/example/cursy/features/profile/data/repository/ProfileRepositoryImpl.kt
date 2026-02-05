@@ -1,6 +1,7 @@
 package com.example.cursy.features.profile.data.repository
 
 import com.example.cursy.core.network.CoursyApi
+import com.example.cursy.core.network.RegisterRequest
 import com.example.cursy.features.profile.data.remote.mapper.toDomain
 import com.example.cursy.features.profile.data.remote.mapper.toCourseItem
 import com.example.cursy.features.profile.domain.entities.CourseItem
@@ -59,4 +60,27 @@ class ProfileRepositoryImpl(private val api: CoursyApi) : ProfileRepository {
             Result.failure(e)
         }
     }
+
+    override suspend fun registerProfile(
+        name: String,
+        email: String,
+        password: String,
+        ine_url: String,
+        university: String?
+    ): Result<Unit> {
+        return try {
+            api.register(
+                RegisterRequest(
+                    name = name,
+                    email = email,
+                    password = password,
+                    ine_url =ine_url,
+                )
+            )
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
 }

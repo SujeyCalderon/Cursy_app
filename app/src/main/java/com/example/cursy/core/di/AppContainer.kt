@@ -17,6 +17,7 @@ import com.example.cursy.features.profile.domain.repository.ProfileRepository
 import com.example.cursy.features.profile.domain.usecases.GetMyCoursesUseCase
 import com.example.cursy.features.profile.domain.usecases.GetMyProfileUseCase
 import com.example.cursy.features.profile.domain.usecases.GetSavedCoursesUseCase
+import com.example.cursy.features.profile.domain.usecases.RegisterProfileUseCase
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
@@ -90,6 +91,10 @@ class AppContainer {
     }
 
     // Use Cases
+    val registerProfileUseCase: RegisterProfileUseCase by lazy {
+        RegisterProfileUseCase(profileRepository)
+    }
+
     val getFeedUseCase: GetFeedUseCase by lazy {
         GetFeedUseCase(feedRepository)
     }
