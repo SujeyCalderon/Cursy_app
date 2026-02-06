@@ -47,4 +47,12 @@ class FeedViewModel(private val getFeedUseCase: GetFeedUseCase) : ViewModel() {
     fun refresh() {
         loadFeed()
     }
+
+    fun showPublishDialog() {
+        _uiState.update { it.copy(showPublishFirstDialog = true) }
+    }
+
+    fun hidePublishDialog() {
+        _uiState.update { it.copy(showPublishFirstDialog = false) }
+    }
 }

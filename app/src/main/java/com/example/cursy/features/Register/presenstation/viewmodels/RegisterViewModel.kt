@@ -34,6 +34,13 @@ class RegisterViewModel(
     private val _message = MutableStateFlow("")
     val message = _message.asStateFlow()
 
+    private val _passwordVisible = MutableStateFlow(false)
+    val passwordVisible = _passwordVisible.asStateFlow()
+
+    fun togglePasswordVisibility() {
+        _passwordVisible.value = !_passwordVisible.value
+    }
+
 
     fun onNameChange(value: String) {
         _name.value = value

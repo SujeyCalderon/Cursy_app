@@ -68,8 +68,7 @@ fun LoginScreen(
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
     val error by viewModel.error.collectAsStateWithLifecycle()
     val loginSuccess by viewModel.loginSuccess.collectAsStateWithLifecycle()
-
-    var passwordVisible by remember { mutableStateOf(false) }
+    val passwordVisible by viewModel.passwordVisible.collectAsStateWithLifecycle()
 
     LaunchedEffect(loginSuccess) {
         loginSuccess?.let { response ->
@@ -180,7 +179,7 @@ fun LoginScreen(
                 else
                     Icons.Default.VisibilityOff
 
-                IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                IconButton(onClick = { viewModel.togglePasswordVisibility() }) {
                     Icon(imageVector = icon, contentDescription = null)
                 }
             }
