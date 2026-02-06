@@ -39,13 +39,12 @@ fun FeedScreen(
     hasPublishedCourse: Boolean = false
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    var showPublishFirstDialog by remember { mutableStateOf(false) }
 
-    if (showPublishFirstDialog) {
+    if (uiState.showPublishFirstDialog) {
         PublishFirstDialog(
-            onDismiss = { showPublishFirstDialog = false },
+            onDismiss = { viewModel.hidePublishDialog() },
             onCreateCourse = {
-                showPublishFirstDialog = false
+                viewModel.hidePublishDialog()
                 onCreateCourse()
             }
         )
@@ -187,7 +186,7 @@ fun FeedScreen(
                                     if (hasPublishedCourse) {
                                         onCourseClick(course.id)
                                     } else {
-                                        showPublishFirstDialog = true
+                                        viewModel.showPublishDialog()
                                     }
                                 }
                             )

@@ -43,7 +43,6 @@ fun CourseDetailScreen(
     hasPublishedCourse: Boolean = false
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    var showMenu by remember { mutableStateOf(false) }
 
     LaunchedEffect(courseId) {
         viewModel.loadCourse(courseId)
@@ -70,17 +69,17 @@ fun CourseDetailScreen(
                 },
                 actions = {
                     if (uiState.isOwner) {
-                        IconButton(onClick = { showMenu = true }) {
+                        IconButton(onClick = { viewModel.showMenu() }) {
                             Icon(Icons.Default.MoreVert, contentDescription = "Opciones")
                         }
                         DropdownMenu(
-                            expanded = showMenu,
-                            onDismissRequest = { showMenu = false }
+                            expanded = uiState.showMenu,
+                            onDismissRequest = { viewModel.hideMenu() }
                         ) {
                             DropdownMenuItem(
                                 text = { Text("Editar") },
                                 onClick = {
-                                    showMenu = false
+                                    viewModel.hideMenu()
                                     onEditCourse()
                                 },
                                 leadingIcon = {
@@ -90,7 +89,7 @@ fun CourseDetailScreen(
                             DropdownMenuItem(
                                 text = { Text("Eliminar", color = Color.Red) },
                                 onClick = {
-                                    showMenu = false
+                                    viewModel.hideMenu()
                                     viewModel.showDeleteDialog()
                                 },
                                 leadingIcon = {

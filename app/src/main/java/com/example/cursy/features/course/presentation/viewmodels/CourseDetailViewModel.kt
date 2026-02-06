@@ -56,6 +56,14 @@ class CourseDetailViewModel(
         _uiState.update { it.copy(showDeleteDialog = false) }
     }
 
+    fun showMenu() {
+        _uiState.update { it.copy(showMenu = true) }
+    }
+
+    fun hideMenu() {
+        _uiState.update { it.copy(showMenu = false) }
+    }
+
     fun deleteCourse(courseId: String) {
         viewModelScope.launch {
             _uiState.update { it.copy(showDeleteDialog = false) }

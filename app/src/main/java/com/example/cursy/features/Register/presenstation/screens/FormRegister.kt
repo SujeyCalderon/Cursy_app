@@ -72,7 +72,7 @@ factory = RegisterViewModelFactory(appContainer.registerProfileUseCase)
     val nombre by viewModel.name.collectAsStateWithLifecycle()
     val email by viewModel.email.collectAsStateWithLifecycle()
     val password by viewModel.password.collectAsStateWithLifecycle()
-    var passwordVisible by remember { mutableStateOf(false) }
+    val passwordVisible by viewModel.passwordVisible.collectAsStateWithLifecycle()
 
     val message by viewModel.message.collectAsStateWithLifecycle()
     val error by viewModel.error.collectAsStateWithLifecycle()
@@ -212,7 +212,7 @@ factory = RegisterViewModelFactory(appContainer.registerProfileUseCase)
                     else
                         Icons.Default.VisibilityOff
 
-                    IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                    IconButton(onClick = { viewModel.togglePasswordVisibility() }) {
                         Icon(imageVector = icon, contentDescription = null)
                     }
                 }

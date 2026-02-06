@@ -9,5 +9,6 @@ data class CourseDetailUiState(
     val isSaved: Boolean = false,
     val error: String? = null,
     val showDeleteDialog: Boolean = false,
-    val deleteSuccess: Boolean = false
+    val deleteSuccess: Boolean = false,
+    val showMenu: Boolean = false
 )

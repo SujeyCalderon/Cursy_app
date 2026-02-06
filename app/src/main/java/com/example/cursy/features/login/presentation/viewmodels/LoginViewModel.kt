@@ -26,6 +26,13 @@ class LoginViewModel(private val loginUseCase: LoginUseCase) : ViewModel() {
     private val _loginSuccess = MutableStateFlow<LoginResponse?>(null)
     val loginSuccess: StateFlow<LoginResponse?> = _loginSuccess.asStateFlow()
 
+    private val _passwordVisible = MutableStateFlow(false)
+    val passwordVisible: StateFlow<Boolean> = _passwordVisible.asStateFlow()
+
+    fun togglePasswordVisibility() {
+        _passwordVisible.value = !_passwordVisible.value
+    }
+
     fun onEmailChange(value: String) {
         _email.value = value
     }
