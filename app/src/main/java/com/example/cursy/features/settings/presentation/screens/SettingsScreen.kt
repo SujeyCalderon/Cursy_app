@@ -46,7 +46,7 @@ fun SettingsScreen(
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color.White
+                    containerColor = MaterialTheme.colorScheme.surface
                 )
             )
         }
@@ -55,22 +55,21 @@ fun SettingsScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .background(Color(0xFFF9F9F9))
+                .background(MaterialTheme.colorScheme.background)
         ) {
-            // GENERAL Section
             SectionHeader("GENERAL")
             
             SettingsItem(
                 icon = Icons.Default.Description,
-                iconBackground = Color(0xFFF0F0F0),
+                iconBackground = MaterialTheme.colorScheme.surfaceVariant,
                 title = "Términos y Condiciones",
-                onClick = { /* TODO: Open terms */ },
+                onClick = { },
                 showArrow = true
             )
             
             SettingsItemWithSwitch(
                 icon = Icons.Default.DarkMode,
-                iconBackground = Color(0xFFF0F0F0),
+                iconBackground = MaterialTheme.colorScheme.surfaceVariant,
                 title = "Tema Oscuro",
                 isChecked = isDarkMode,
                 onCheckedChange = onToggleDarkMode
@@ -78,7 +77,6 @@ fun SettingsScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // CUENTA Section
             SectionHeader("CUENTA")
             
             SettingsItem(
@@ -107,11 +105,10 @@ fun SettingsScreen(
 
             Spacer(modifier = Modifier.weight(1f))
 
-            // Version footer
             Text(
-                text = "Versión 1.0.4 — © 2024 University Exchange",
+                text = "Versión 1.0.3 - App Cursy 2026 UP",
                 fontSize = 12.sp,
-                color = Color.Gray,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(16.dp)
@@ -188,7 +185,7 @@ fun SettingsScreen(
 @Composable
 private fun SectionHeader(
     title: String,
-    color: Color = Color.Gray
+    color: Color = MaterialTheme.colorScheme.onSurfaceVariant
 ) {
     Text(
         text = title,
@@ -203,9 +200,9 @@ private fun SectionHeader(
 private fun SettingsItem(
     icon: ImageVector,
     iconBackground: Color,
-    iconTint: Color = Color.DarkGray,
+    iconTint: Color = MaterialTheme.colorScheme.onSurface,
     title: String,
-    titleColor: Color = Color.Black,
+    titleColor: Color = MaterialTheme.colorScheme.onSurface,
     subtitle: String? = null,
     onClick: () -> Unit,
     showArrow: Boolean = false
@@ -213,7 +210,7 @@ private fun SettingsItem(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .background(Color.White)
+            .background(MaterialTheme.colorScheme.surface)
             .clickable { onClick() }
             .padding(horizontal = 16.dp, vertical = 16.dp),
         verticalAlignment = Alignment.CenterVertically
@@ -246,7 +243,7 @@ private fun SettingsItem(
                 Text(
                     text = subtitle,
                     fontSize = 12.sp,
-                    color = Color.Gray
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
         }
@@ -255,7 +252,7 @@ private fun SettingsItem(
             Icon(
                 Icons.AutoMirrored.Filled.KeyboardArrowRight,
                 contentDescription = null,
-                tint = Color.LightGray
+                tint = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
     }
@@ -272,7 +269,7 @@ private fun SettingsItemWithSwitch(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .background(Color.White)
+            .background(MaterialTheme.colorScheme.surface)
             .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -286,7 +283,7 @@ private fun SettingsItemWithSwitch(
             Icon(
                 icon,
                 contentDescription = null,
-                tint = Color.DarkGray,
+                tint = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.size(24.dp)
             )
         }
@@ -297,6 +294,7 @@ private fun SettingsItemWithSwitch(
             text = title,
             fontSize = 16.sp,
             fontWeight = FontWeight.Medium,
+            color = MaterialTheme.colorScheme.onSurface,
             modifier = Modifier.weight(1f)
         )
         

@@ -60,13 +60,13 @@ fun FeedScreen(
                     )
                 },
                 actions = {
-                    // Foto de perfil
+
                     Box(
                         modifier = Modifier
                             .padding(end = 16.dp)
                             .size(40.dp)
                             .clip(CircleShape)
-                            .background(Color.LightGray)
+                            .background(MaterialTheme.colorScheme.surfaceVariant)
                     ) {
                         if (userProfileImage.isNotEmpty()) {
                             AsyncImage(

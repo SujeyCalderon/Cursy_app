@@ -95,11 +95,11 @@ fun EditProfileScreen(
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color.White
+                    containerColor = MaterialTheme.colorScheme.surface
                 )
             )
         },
-        containerColor = Color.White
+        containerColor = MaterialTheme.colorScheme.background
     ) { paddingValues ->
         Column(
             modifier = Modifier
@@ -108,7 +108,7 @@ fun EditProfileScreen(
                 .padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Profile Image with Edit Overlay
+
             Box(
                 modifier = Modifier
                     .size(120.dp)
@@ -126,13 +126,13 @@ fun EditProfileScreen(
                     contentScale = ContentScale.Crop
                 )
                 
-                // Camera Icon Overlay
+
                 Box(
                     modifier = Modifier
                         .align(Alignment.BottomEnd)
                         .size(36.dp)
                         .background(GreenPrimary, CircleShape)
-                        .border(2.dp, Color.White, CircleShape),
+                        .border(2.dp, MaterialTheme.colorScheme.surface, CircleShape),
                     contentAlignment = Alignment.Center
                 ) {
                     if (isUploading) {
@@ -157,7 +157,7 @@ fun EditProfileScreen(
             Text(
                 text = "Toca para cambiar la foto",
                 fontSize = 13.sp,
-                color = Color.Gray
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             
             Spacer(modifier = Modifier.height(32.dp))
@@ -209,7 +209,7 @@ fun EditProfileScreen(
             
             Spacer(modifier = Modifier.weight(1f))
             
-            // Save
+
             Button(
                 onClick = {
                     scope.launch {

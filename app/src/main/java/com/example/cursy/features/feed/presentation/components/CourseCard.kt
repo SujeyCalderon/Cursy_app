@@ -35,7 +35,7 @@ fun CourseCard(
         onClick = onClick
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
-            // Imagen con overlay gradient
+
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -48,7 +48,7 @@ fun CourseCard(
                     contentScale = ContentScale.Crop
                 )
 
-                // Gradient overlay
+
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
@@ -63,7 +63,7 @@ fun CourseCard(
                 )
             }
 
-            // Información del curso
+
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -83,7 +83,7 @@ fun CourseCard(
                 Text(
                     text = "Por: ${course.authorName}",
                     fontSize = 14.sp,
-                    color = Color(0xFF5F6368),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )

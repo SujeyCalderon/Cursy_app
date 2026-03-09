@@ -31,6 +31,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -46,7 +47,7 @@ import com.example.cursy.R
 import com.example.cursy.features.login.presentation.viewmodels.LoginViewModel
 
 private val GreenPrimary = Color(0xFF2ECC71)
-private val TextDark = Color(0xFF2C3E50)
+
 
 @Composable
 fun LoginScreen(
@@ -107,7 +108,7 @@ fun LoginScreen(
                 text = "Bienvenido a Cursy",
                 fontSize = 26.sp,
                 fontWeight = FontWeight.Bold,
-                color = TextDark,
+                color = MaterialTheme.colorScheme.onBackground,
                 textAlign = TextAlign.Center
             )
 
@@ -116,7 +117,7 @@ fun LoginScreen(
             Text(
                 text = "Ingresa tus credenciales para continuar",
                 fontSize = 15.sp,
-                color = Color.Gray,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center
             )
         }
@@ -127,7 +128,7 @@ fun LoginScreen(
             text = "Email",
             fontSize = 14.sp,
             fontWeight = FontWeight.Medium,
-            color = TextDark
+            color = MaterialTheme.colorScheme.onSurface
         )
 
         Spacer(modifier = Modifier.height(8.dp))
@@ -148,7 +149,7 @@ fun LoginScreen(
             text = "Contraseña",
             fontSize = 14.sp,
             fontWeight = FontWeight.Medium,
-            color = TextDark
+            color = MaterialTheme.colorScheme.onSurface
         )
 
         Spacer(modifier = Modifier.height(8.dp))
@@ -193,7 +194,7 @@ fun LoginScreen(
         if (error.isNotEmpty()) {
             Text(
                 text = error,
-                color = Color.Red,
+                color = MaterialTheme.colorScheme.error,
                 fontSize = 14.sp,
                 modifier = Modifier.padding(bottom = 12.dp)
             )
@@ -235,7 +236,7 @@ fun LoginScreen(
             Text(
                 text = "¿No tienes cuenta? ",
                 fontSize = 14.sp,
-                color = Color.Gray
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             Text(
                 text = "Regístrate",

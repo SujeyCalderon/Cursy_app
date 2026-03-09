@@ -30,13 +30,10 @@ import coil.compose.AsyncImage
 import com.example.cursy.features.profile.domain.entities.CourseItem
 import com.example.cursy.features.profile.presentation.viewmodels.ProfileViewModel
 
-
 private val GreenPrimary = Color(0xFF2ECC71)
 private val GreenLight = Color(0xFFE8F8F0)
 private val OrangeWarning = Color(0xFFF39C12)
 private val OrangeLight = Color(0xFFFEF5E7)
-private val GrayText = Color(0xFF7F8C8D)
-private val GrayDivider = Color(0xFFECF0F1)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -63,16 +60,16 @@ fun ProfileScreen(
                         Icon(
                             Icons.Default.Settings,
                             contentDescription = "Configuración",
-                            tint = GrayText
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color.White
+                    containerColor = MaterialTheme.colorScheme.surface
                 )
             )
         },
-        containerColor = Color.White
+        containerColor = MaterialTheme.colorScheme.background
     ) { paddingValues ->
         Box(
             modifier = Modifier
@@ -99,7 +96,7 @@ fun ProfileScreen(
                     Spacer(modifier = Modifier.height(16.dp))
                     Text(
                         text = uiState.error ?: "Error desconocido",
-                        color = Color.Red,
+                        color = MaterialTheme.colorScheme.error,
                         fontSize = 16.sp
                     )
                     Spacer(modifier = Modifier.height(16.dp))
@@ -116,7 +113,6 @@ fun ProfileScreen(
                 LazyColumn(
                     modifier = Modifier.fillMaxSize()
                 ) {
-                    // Profile Header
                     item {
                         ProfileHeader(
                             name = uiState.profile!!.name,
@@ -210,7 +206,7 @@ fun ProfileHeader(
                     text = name,
                     fontSize = 20.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color.Black
+                    color = MaterialTheme.colorScheme.onSurface
                 )
 
                 if (bio.isNotEmpty()) {
@@ -218,7 +214,7 @@ fun ProfileHeader(
                     Text(
                         text = bio,
                         fontSize = 14.sp,
-                        color = GrayText,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis
                     )
@@ -254,9 +250,9 @@ fun ProfileHeader(
             onClick = onEditClick,
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(8.dp),
-            border = BorderStroke(1.dp, GrayDivider),
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
             colors = ButtonDefaults.outlinedButtonColors(
-                contentColor = Color.Black
+                contentColor = MaterialTheme.colorScheme.onSurface
             )
         ) {
             Text(
@@ -293,7 +289,7 @@ fun ProfileTabs(
     }
 
     HorizontalDivider(
-        color = GrayDivider,
+        color = MaterialTheme.colorScheme.outline,
         thickness = 1.dp
     )
 }
@@ -315,7 +311,7 @@ fun TabItem(
             text = text,
             fontSize = 14.sp,
             fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
-            color = if (isSelected) GreenPrimary else GrayText
+            color = if (isSelected) GreenPrimary else MaterialTheme.colorScheme.onSurfaceVariant
         )
         Spacer(modifier = Modifier.height(8.dp))
         Box(
@@ -342,7 +338,6 @@ fun CourseListItem(
         Column(
             modifier = Modifier.weight(1f)
         ) {
-            // Badge + Title
             Row(
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -359,7 +354,7 @@ fun CourseListItem(
                     text = course.title,
                     fontSize = 16.sp,
                     fontWeight = FontWeight.SemiBold,
-                    color = Color.Black,
+                    color = MaterialTheme.colorScheme.onSurface,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                     modifier = if (course.isDraft) Modifier.weight(1f, fill = false) else Modifier
@@ -368,7 +363,6 @@ fun CourseListItem(
 
             Spacer(modifier = Modifier.height(4.dp))
 
-            // Subtitle
             Row(
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -383,12 +377,12 @@ fun CourseListItem(
                     Text(
                         text = "Publicado",
                         fontSize = 13.sp,
-                        color = GrayText
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Text(
                         text = " • ",
                         fontSize = 13.sp,
-                        color = GrayText
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
                 Text(
@@ -396,7 +390,7 @@ fun CourseListItem(
                         if (course.isDraft) "Sin contenido aún" else "0 estudiantes inscritos" 
                     },
                     fontSize = 13.sp,
-                    color = GrayText,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
@@ -406,13 +400,13 @@ fun CourseListItem(
         Icon(
             Icons.Default.ChevronRight,
             contentDescription = null,
-            tint = GrayText,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.size(24.dp)
         )
     }
 
     HorizontalDivider(
-        color = GrayDivider,
+        color = MaterialTheme.colorScheme.outline,
         thickness = 1.dp,
         modifier = Modifier.padding(horizontal = 24.dp)
     )
@@ -454,7 +448,7 @@ fun EmptyCoursesPlaceholder() {
         Text(
             text = "No has publicado cursos",
             fontSize = 16.sp,
-            color = GrayText
+            color = MaterialTheme.colorScheme.onSurfaceVariant
         )
     }
 }

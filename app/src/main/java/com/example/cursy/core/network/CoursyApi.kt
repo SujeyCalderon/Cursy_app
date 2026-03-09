@@ -4,6 +4,7 @@ import com.example.cursy.features.course.data.remote.dto.CourseDetailResponse
 import com.example.cursy.features.feed.data.remote.dto.FeedResponse
 import com.example.cursy.features.profile.data.remote.dto.MyCoursesResponse
 import com.example.cursy.features.profile.data.remote.dto.ProfileResponse
+import com.example.cursy.features.explore.data.remote.dto.UsersResponse
 import com.google.gson.annotations.SerializedName
 import okhttp3.MultipartBody
 import retrofit2.http.*
@@ -63,7 +64,46 @@ interface CoursyApi {
 
     @DELETE("auth/account")
     suspend fun deleteAccount(): MessageResponse
+
+    @GET("chats")
+    suspend fun getConversations(): List<com.example.cursy.features.chat.data.remote.dto.ConversationDto>
+
+    @POST("chats")
+    suspend fun createConversation(@Body request: CreateConversationRequest): com.example.cursy.features.chat.data.remote.dto.ConversationDto
+
+    @GET("chats/{id}/messages")
+    suspend fun getMessages(@Path("id") conversationId: String): List<com.example.cursy.features.chat.data.remote.dto.MessageDto>
+
+    @GET("users")
+    suspend fun getUsers(@Query("q") query: String? = null): UsersResponse
+
+    @GET("users/online")
+    suspend fun getOnlineUsers(): OnlineUsersResponse
+
+    @POST("chats/{id}/messages")
+    suspend fun sendMessage(
+        @Path("id") conversationId: String,
+        @Body request: SendMessageRequest
+    ): com.example.cursy.features.chat.data.remote.dto.MessageDto
 }
+
+data class UsersResponse(
+    val users: List<UserResponse>,
+    val count: Int
+)
+
+data class OnlineUsersResponse(
+    @SerializedName("online_users")
+    val onlineUsers: List<String>
+)
+
+data class SendMessageRequest(
+    val content: String
+)
+
+data class CreateConversationRequest(
+    val other_user_id: String
+)
 
 data class LoginRequest(
     val email: String,

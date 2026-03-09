@@ -9,6 +9,10 @@ sealed class Screen(val route: String) {
     object EditProfile : Screen("edit_profile")
     object Explore : Screen("explore")
     object ChatList : Screen("chat_list")
+    object UserSearch : Screen("user_search")
+    object Message : Screen("message/{conversationId}") {
+        fun createRoute(conversationId: String) = "message/$conversationId"
+    }
     
     object CreateCourse : Screen("create_course")
     object EditCourse : Screen("edit_course/{courseId}") {

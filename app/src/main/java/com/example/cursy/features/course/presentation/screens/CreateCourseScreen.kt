@@ -124,15 +124,14 @@ fun CreateCourseScreen(
                     }
                 },
                 actions = {
-                    // Guardar borrador
                     TextButton(
                         onClick = { onSaveDraft(title, description, coverImage, blocks) }
                     ) {
-                        Text("Borrador", color = Color.Gray)
+                        Text("Borrador", color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color.White
+                    containerColor = MaterialTheme.colorScheme.surface
                 )
             )
         },
@@ -140,7 +139,7 @@ fun CreateCourseScreen(
             Surface(
                 modifier = Modifier.fillMaxWidth(),
                 shadowElevation = 8.dp,
-                color = Color.White
+                color = MaterialTheme.colorScheme.surface
             ) {
                 Button(
                     onClick = {
@@ -174,7 +173,7 @@ fun CreateCourseScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .background(Color(0xFFF9F9F9)),
+                .background(MaterialTheme.colorScheme.background),
             contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
@@ -183,7 +182,7 @@ fun CreateCourseScreen(
                     "Imagen de Portada",
                     fontWeight = FontWeight.Medium,
                     fontSize = 14.sp,
-                    color = Color.Gray
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 
@@ -192,8 +191,8 @@ fun CreateCourseScreen(
                         .fillMaxWidth()
                         .height(180.dp)
                         .clip(RoundedCornerShape(12.dp))
-                        .background(Color.White)
-                        .border(2.dp, Color.LightGray, RoundedCornerShape(12.dp))
+                        .background(MaterialTheme.colorScheme.surface)
+                        .border(2.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(12.dp))
                         .clickable { 
                             activeBlockIndex = null
                             imagePickerLauncher.launch("image/*") 
@@ -207,7 +206,7 @@ fun CreateCourseScreen(
                             modifier = Modifier.fillMaxSize(),
                             contentScale = ContentScale.Crop
                         )
-                        // Botón de eliminar
+
                         IconButton(
                             onClick = { coverImage = "" },
                             modifier = Modifier
@@ -229,12 +228,12 @@ fun CreateCourseScreen(
                                 Icons.Default.AddPhotoAlternate,
                                 contentDescription = null,
                                 modifier = Modifier.size(48.dp),
-                                tint = Color.LightGray
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                             Spacer(modifier = Modifier.height(8.dp))
                             Text(
                                 "Toca para agregar imagen",
-                                color = Color.Gray,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 fontSize = 14.sp
                             )
                         }
@@ -253,13 +252,13 @@ fun CreateCourseScreen(
                 }
             }
 
-            // Title
+
             item {
                 Text(
                     "Título del Curso",
                     fontWeight = FontWeight.Medium,
                     fontSize = 14.sp,
-                    color = Color.Gray
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 OutlinedTextField(
@@ -270,20 +269,20 @@ fun CreateCourseScreen(
                     shape = RoundedCornerShape(12.dp),
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = GreenPrimary,
-                        unfocusedBorderColor = Color.LightGray,
-                        focusedContainerColor = Color.White,
-                        unfocusedContainerColor = Color.White
+                        unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                        focusedContainerColor = MaterialTheme.colorScheme.surface,
+                        unfocusedContainerColor = MaterialTheme.colorScheme.surface
                     )
                 )
             }
 
-            // Description
+
             item {
                 Text(
                     "Descripción",
                     fontWeight = FontWeight.Medium,
                     fontSize = 14.sp,
-                    color = Color.Gray
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 OutlinedTextField(
@@ -296,9 +295,9 @@ fun CreateCourseScreen(
                     shape = RoundedCornerShape(12.dp),
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = GreenPrimary,
-                        unfocusedBorderColor = Color.LightGray,
-                        focusedContainerColor = Color.White,
-                        unfocusedContainerColor = Color.White
+                        unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                        focusedContainerColor = MaterialTheme.colorScheme.surface,
+                        unfocusedContainerColor = MaterialTheme.colorScheme.surface
                     )
                 )
             }
@@ -437,7 +436,7 @@ private fun ContentBlockEditor(
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White)
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
         Column(modifier = Modifier.padding(12.dp)) {
             Row(
@@ -456,7 +455,7 @@ private fun ContentBlockEditor(
                     },
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Medium,
-                    color = Color.Gray
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 
                 Row {
@@ -464,14 +463,14 @@ private fun ContentBlockEditor(
                         Icon(
                             Icons.Default.KeyboardArrowUp,
                             contentDescription = "Subir",
-                            tint = Color.Gray
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                     IconButton(onClick = onMoveDown, modifier = Modifier.size(32.dp)) {
                         Icon(
                             Icons.Default.KeyboardArrowDown,
                             contentDescription = "Bajar",
-                            tint = Color.Gray
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                     IconButton(onClick = onDelete, modifier = Modifier.size(32.dp)) {
@@ -494,8 +493,8 @@ private fun ContentBlockEditor(
                                 .fillMaxWidth()
                                 .height(150.dp)
                                 .clip(RoundedCornerShape(8.dp))
-                                .background(Color(0xFFF5F5F5))
-                                .border(1.dp, Color.LightGray, RoundedCornerShape(8.dp))
+                                .background(MaterialTheme.colorScheme.surfaceVariant)
+                                .border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(8.dp))
                                 .clickable {
                                     val mimeType = if (block.type == "video") "video/*" else "image/*"
                                     onPickMedia(mimeType)
@@ -510,19 +509,19 @@ private fun ContentBlockEditor(
                                         if (block.type == "image") Icons.Default.Image else Icons.Default.VideoLibrary,
                                         contentDescription = null,
                                         modifier = Modifier.size(48.dp),
-                                        tint = Color.Gray
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
                                     Spacer(modifier = Modifier.height(8.dp))
                                     Text(
                                         text = if (block.type == "image") "Subir Imagen" else "Subir Video",
-                                        color = Color.Gray,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                                         fontWeight = FontWeight.Medium
                                     )
                                 }
                             }
                         }
                     } else {
-                        // Content Preview
+
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -592,7 +591,7 @@ private fun ContentBlockEditor(
                                 }
                             }
 
-                            // Delete Button
+
                             IconButton(
                                 onClick = { onContentChange("") },
                                 modifier = Modifier
@@ -628,7 +627,7 @@ private fun ContentBlockEditor(
                         shape = RoundedCornerShape(8.dp),
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedBorderColor = GreenPrimary,
-                            unfocusedBorderColor = Color.LightGray
+                            unfocusedBorderColor = MaterialTheme.colorScheme.outline
                         )
                     )
                 }
@@ -654,7 +653,7 @@ suspend fun uriToFile(context: Context, uri: Uri): File? {
             inputStream?.close()
             outputStream.close()
             
-            // Solo comprimir si es imagen
+
             if (mimeType?.startsWith("image/") == true) {
                  val bitmap = BitmapFactory.decodeFile(tempFile.absolutePath)
                  if (bitmap != null) {
