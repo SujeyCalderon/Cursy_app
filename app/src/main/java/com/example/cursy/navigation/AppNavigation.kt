@@ -200,7 +200,7 @@ fun AppNavigation(
                 )
             }
 
-            // ── Mensajes ───────────────────────────────────────────────────
+            //Mensajes
             composable(
                 route = Screen.Message.route,
                 arguments = listOf(navArgument("conversationId") { type = NavType.StringType })
@@ -239,7 +239,7 @@ fun AppNavigation(
                 )
             }
 
-            // ── Configuración ──────────────────────────────────────────────
+            //Configuración
             composable(Screen.Settings.route) {
                 val settingsViewModel: SettingsViewModel = hiltViewModel()
                 val navigateToLogin by settingsViewModel.navigateToLogin.collectAsState()
@@ -262,7 +262,7 @@ fun AppNavigation(
                 )
             }
 
-            // ── Editar Perfil ──────────────────────────────────────────────
+            //Editar Perfil
             composable(Screen.EditProfile.route) {
                 val profileViewModel: ProfileViewModel = hiltViewModel()
                 val editProfileViewModel: EditProfileViewModel = hiltViewModel()
@@ -288,7 +288,7 @@ fun AppNavigation(
                 }
             }
 
-            // ── Crear Curso ────────────────────────────────────────────────
+            //Crear Curso
             composable(Screen.CreateCourse.route) {
                 val createEditViewModel: CreateEditCourseViewModel = hiltViewModel()
                 val navigateBack    by createEditViewModel.navigateBack.collectAsState()
@@ -310,7 +310,7 @@ fun AppNavigation(
                 )
             }
 
-            // ── Editar Curso ───────────────────────────────────────────────
+            //Editar Curso
             composable(
                 route = Screen.EditCourse.route,
                 arguments = listOf(navArgument("courseId") { type = NavType.StringType })
@@ -349,7 +349,7 @@ fun AppNavigation(
                 }
             }
 
-            // ── Detalle de Curso ───────────────────────────────────────────
+            //Detalle de Curso
             composable(
                 route = Screen.CourseDetail.route,
                 arguments = listOf(navArgument("courseId") { type = NavType.StringType })
@@ -369,7 +369,7 @@ fun AppNavigation(
     }
 }
 
-// ── Bottom Navigation Bar ──────────────────────────────────────────────────────
+//Bottom Navigation Bar
 @Composable
 fun BottomNavigationBar(navController: NavHostController) {
     val items = listOf(
@@ -415,7 +415,7 @@ fun BottomNavigationBar(navController: NavHostController) {
     }
 }
 
-// ── Helper ─────────────────────────────────────────────────────────────────────
+//Helper
 @Composable
 fun RefreshOnResume(onRefresh: () -> Unit) {
     val lifecycleOwner = LocalLifecycleOwner.current
