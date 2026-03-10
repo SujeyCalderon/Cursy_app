@@ -272,7 +272,6 @@ fun AppNavigation(
                 val profile = uiState.profile
 
                 if (profile != null) {
-
                     LaunchedEffect(profile) {
                         editProfileViewModel.initWith(
                             name = profile.name,
@@ -286,15 +285,6 @@ fun AppNavigation(
                         initialProfileImage = profile.profileImage,
                         onNavigateBack = { navController.popBackStack() },
                         viewModel = editProfileViewModel
-
-                    com.example.cursy.features.profile.presentation.screens.EditProfileScreen(
-                        viewModel           = editProfileViewModel,
-                        initialName         = profile.name,
-                        initialBio          = profile.bio,
-                        initialUniversity   = profile.university,
-                        initialProfileImage = profile.profileImage,
-                        onNavigateBack      = { navController.popBackStack() }
-
                     )
                 } else {
                     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
