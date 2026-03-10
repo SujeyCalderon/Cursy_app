@@ -33,7 +33,7 @@ class ProfileViewModel(
 
             // Cargar mis cursos
             val coursesResult = getMyCoursesUseCase()
-            
+
             // Cargar cursos guardados
             val savedResult = getSavedCoursesUseCase?.invoke()
 
@@ -57,7 +57,7 @@ class ProfileViewModel(
     fun selectTab(index: Int) {
         _uiState.update { it.copy(selectedTab = index) }
     }
-    
+
     fun refresh() {
         loadProfile()
     }

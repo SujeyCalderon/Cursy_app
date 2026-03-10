@@ -38,9 +38,12 @@ import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.compose.ui.Alignment
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.cursy.features.settings.presentation.screens.SettingsScreen
 import com.example.cursy.features.login.presentation.screens.LoginScreen
 import com.example.cursy.features.Register.presenstation.screens.FormRegister
+import com.example.cursy.features.profile.presentation.screens.EditProfileScreen
+import com.example.cursy.features.profile.presentation.viewmodels.EditProfileViewModel
 import kotlinx.coroutines.launch
 
 private val GreenPrimary = Color(0xFF2ECC71)
@@ -136,15 +139,15 @@ fun AppNavigation(
                     viewModel.refresh()
                     profileViewModel.refresh()
                 }
-                
+
                 val profileUiState by profileViewModel.uiState.collectAsState()
-                
+
                 LaunchedEffect(profileUiState.profile) {
                     profileUiState.profile?.let {
                         userProfileImage = it.profileImage
                     }
                 }
-                
+
                 LaunchedEffect(profileUiState.publishedCourses.size) {
                     if (profileUiState.profile != null) {
                         hasPublishedCourse = profileUiState.publishedCourses.isNotEmpty()
@@ -177,24 +180,24 @@ fun AppNavigation(
                         }
                     }
                 )
-                
+
                 RefreshOnResume {
                     viewModel.refresh()
                 }
 
                 val uiState by viewModel.uiState.collectAsState()
-                
+
                 // Actualizar hasPublishedCourse solo cuando cambie
                 LaunchedEffect(uiState.publishedCourses.size) {
                     hasPublishedCourse = uiState.publishedCourses.isNotEmpty()
                 }
-                
+
                 LaunchedEffect(uiState.profile?.profileImage) {
                     uiState.profile?.profileImage?.let {
                         userProfileImage = it
                     }
                 }
-                
+
                 ProfileScreen(
                     viewModel = viewModel,
                     onCourseClick = { courseId, isDraft ->
@@ -248,46 +251,28 @@ fun AppNavigation(
 
             // Edit Profile
             composable(Screen.EditProfile.route) {
-                val profileViewModel: ProfileViewModel = viewModel(
-                    factory = object : ViewModelProvider.Factory {
-                        @Suppress("UNCHECKED_CAST")
-                        override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                            return ProfileViewModel(
-                                appContainer.getMyProfileUseCase,
-                                appContainer.getMyCoursesUseCase,
-                                appContainer.getSavedCoursesUseCase
-                            ) as T
-                        }
-                    }
-                )
-
+                val profileViewModel: ProfileViewModel = hiltViewModel()
+                val editProfileViewModel: EditProfileViewModel = hiltViewModel()
                 val uiState by profileViewModel.uiState.collectAsState()
                 val profile = uiState.profile
 
                 if (profile != null) {
-                    com.example.cursy.features.profile.presentation.screens.EditProfileScreen(
-                        initialName = profile.name,
-                        initialBio = profile.bio,
-                        initialUniversity = profile.university,
+                    LaunchedEffect(profile) {
+                        editProfileViewModel.initWith(
+                            name = profile.name,
+                            bio = profile.bio,
+                            university = profile.university,
+                            profileImage = profile.profileImage
+                        )
+                    }
+
+                    EditProfileScreen(
                         initialProfileImage = profile.profileImage,
                         onNavigateBack = { navController.popBackStack() },
-                        onSave = { name, profileImage, bio, university ->
-                            appContainer.updateProfileUseCase(
-                                name = name,
-                                profileImage = profileImage,
-                                bio = bio,
-                                university = university
-                            )
-                        },
-                        onUploadImage = { file ->
-                            appContainer.uploadImageUseCase(file)
-                        }
+                        viewModel = editProfileViewModel
                     )
                 } else {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
-                    ) {
+                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         CircularProgressIndicator(color = GreenPrimary)
                     }
                 }
@@ -296,7 +281,7 @@ fun AppNavigation(
             // Create Course
             composable(Screen.CreateCourse.route) {
                 var isLoading by remember { mutableStateOf(false) }
-                
+
                 CreateCourseScreen(
                     onNavigateBack = { navController.popBackStack() },
                     onPublish = { title, description, coverImage, blocks ->
@@ -310,7 +295,7 @@ fun AppNavigation(
                                         order = index + 1
                                     )
                                 }
-                                
+
                                 val result = appContainer.createCourseUseCase(
                                     title = title,
                                     description = description,
@@ -318,7 +303,7 @@ fun AppNavigation(
                                     blocks = blockInputs,
                                     publish = true
                                 )
-                                
+
                                 result.fold(
                                     onSuccess = { courseId ->
                                         Log.d("CreateCourse", "Curso creado: $courseId")
@@ -344,7 +329,7 @@ fun AppNavigation(
                                     order = index + 1
                                 )
                             }
-                            
+
                             val result = appContainer.createCourseUseCase(
                                 title = title,
                                 description = description,
@@ -352,7 +337,7 @@ fun AppNavigation(
                                 blocks = blockInputs,
                                 publish = false
                             )
-                            
+
                             result.fold(
                                 onSuccess = { navController.popBackStack() },
                                 onFailure = { Log.e("CreateCourse", "Error: ${it.message}") }
@@ -377,7 +362,7 @@ fun AppNavigation(
                 var initialCoverImage by remember { mutableStateOf("") }
                 var initialBlocks by remember { mutableStateOf<List<EditableBlock>>(emptyList()) }
                 var isLoading by remember { mutableStateOf(true) }
-                
+
                 LaunchedEffect(courseId) {
                     android.util.Log.d("EditCourse", "Fetching course detail for ID: $courseId")
                     val result = appContainer.getCourseDetailUseCase(courseId)
@@ -387,7 +372,7 @@ fun AppNavigation(
                             initialTitle = course.title
                             initialDescription = course.description
                             initialCoverImage = course.coverImage
-                            initialBlocks = course.blocks.map { 
+                            initialBlocks = course.blocks.map {
                                 EditableBlock(
                                     type = it.type.name.lowercase(),
                                     content = it.content
