@@ -11,10 +11,27 @@ import com.example.cursy.features.course.domain.usecases.UploadImageUseCase
 import com.example.cursy.features.course.presentation.screens.EditableBlock
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.io.File
 import javax.inject.Inject
+
+data class CreateEditCourseUiState(
+    val title: String = "",
+    val description: String = "",
+    val coverImage: String = "",
+    val blocks: List<EditableBlock> = listOf(EditableBlock()),
+    val showBlockTypeDialog: Boolean = false,
+    val isPublishing: Boolean = false,
+    val isProcessingImage: Boolean = false,
+    val activeBlockIndex: Int? = null,
+    val isLoading: Boolean = false,
+    val courseLoaded: Boolean = false,
+    val navigateBack: Boolean = false,
+    val coursePublished: Boolean = false
+)
 
 @HiltViewModel
 class CreateEditCourseViewModel @Inject constructor(
@@ -24,67 +41,95 @@ class CreateEditCourseViewModel @Inject constructor(
     private val uploadImageUseCase: UploadImageUseCase
 ) : ViewModel() {
 
-    private val _isLoading = MutableStateFlow(false)
-    val isLoading = _isLoading.asStateFlow()
+    private val _uiState = MutableStateFlow(CreateEditCourseUiState())
+    val uiState: StateFlow<CreateEditCourseUiState> = _uiState.asStateFlow()
 
-    private val _initialTitle = MutableStateFlow("")
-    val initialTitle = _initialTitle.asStateFlow()
+    // Funciones para actualizar el estado del formulario
 
-    private val _initialDescription = MutableStateFlow("")
-    val initialDescription = _initialDescription.asStateFlow()
+    fun onTitleChange(value: String) {
+        _uiState.update { it.copy(title = value) }
+    }
 
-    private val _initialCoverImage = MutableStateFlow("")
-    val initialCoverImage = _initialCoverImage.asStateFlow()
+    fun onDescriptionChange(value: String) {
+        _uiState.update { it.copy(description = value) }
+    }
 
-    private val _initialBlocks = MutableStateFlow<List<EditableBlock>>(emptyList())
-    val initialBlocks = _initialBlocks.asStateFlow()
+    fun onCoverImageChange(value: String) {
+        _uiState.update { it.copy(coverImage = value) }
+    }
 
-    private val _courseLoaded = MutableStateFlow(false)
-    val courseLoaded = _courseLoaded.asStateFlow()
+    fun onBlocksChange(blocks: List<EditableBlock>) {
+        _uiState.update { it.copy(blocks = blocks) }
+    }
 
-    private val _navigateBack = MutableStateFlow(false)
-    val navigateBack = _navigateBack.asStateFlow()
+    fun showBlockTypeDialog() {
+        _uiState.update { it.copy(showBlockTypeDialog = true) }
+    }
 
-    private val _coursePublished = MutableStateFlow(false)
-    val coursePublished = _coursePublished.asStateFlow()
+    fun hideBlockTypeDialog() {
+        _uiState.update { it.copy(showBlockTypeDialog = false) }
+    }
+
+    fun setActiveBlockIndex(index: Int?) {
+        _uiState.update { it.copy(activeBlockIndex = index) }
+    }
+
+    fun setIsProcessingImage(value: Boolean) {
+        _uiState.update { it.copy(isProcessingImage = value) }
+    }
+
+    fun setIsPublishing(value: Boolean) {
+        _uiState.update { it.copy(isPublishing = value) }
+    }
+
+    fun updateBlockContent(index: Int, newContent: String) {
+        val currentBlocks = _uiState.value.blocks.toMutableList()
+        if (index < currentBlocks.size) {
+            currentBlocks[index] = currentBlocks[index].copy(content = newContent)
+            _uiState.update { it.copy(blocks = currentBlocks) }
+        }
+    }
+
+    // Carga los datos del curso para edición
 
     fun loadCourseForEdit(courseId: String) {
         viewModelScope.launch {
-            _isLoading.value = true
+            _uiState.update { it.copy(isLoading = true) }
             val result = getCourseDetailUseCase(courseId)
             result.fold(
                 onSuccess = { (course, _, _) ->
-                    _initialTitle.value = course.title
-                    _initialDescription.value = course.description
-                    _initialCoverImage.value = course.coverImage
-                    _initialBlocks.value = course.blocks.map {
-                        EditableBlock(
-                            type = it.type.name.lowercase(),
-                            content = it.content
+                    _uiState.update {
+                        it.copy(
+                            title = course.title,
+                            description = course.description,
+                            coverImage = course.coverImage,
+                            blocks = course.blocks.map { block ->
+                                EditableBlock(
+                                    type = block.type.name.lowercase(),
+                                    content = block.content
+                                )
+                            }.ifEmpty { listOf(EditableBlock()) },
+                            courseLoaded = true,
+                            isLoading = false
                         )
                     }
-                    _courseLoaded.value = true
-                    _isLoading.value = false
                 },
                 onFailure = {
                     Log.e("CreateEditCourse", "Error al cargar curso: ${it.message}")
-                    _isLoading.value = false
+                    _uiState.update { state -> state.copy(isLoading = false) }
                 }
             )
         }
     }
 
-    fun createCourse(
-        title: String,
-        description: String,
-        coverImage: String,
-        blocks: List<EditableBlock>,
-        publish: Boolean
-    ) {
+    // Crear curso nuevo
+
+    fun createCourse(publish: Boolean) {
+        val state = _uiState.value
         viewModelScope.launch {
-            _isLoading.value = true
+            _uiState.update { it.copy(isLoading = true) }
             try {
-                val blockInputs = blocks.mapIndexed { index, block ->
+                val blockInputs = state.blocks.mapIndexed { index, block ->
                     BlockInput(
                         type = block.type.lowercase(),
                         content = block.content,
@@ -93,9 +138,9 @@ class CreateEditCourseViewModel @Inject constructor(
                 }
 
                 val result = createCourseUseCase(
-                    title = title,
-                    description = description,
-                    coverImage = coverImage.takeIf { it.isNotEmpty() },
+                    title = state.title,
+                    description = state.description,
+                    coverImage = state.coverImage.takeIf { it.isNotEmpty() },
                     blocks = blockInputs,
                     publish = publish
                 )
@@ -103,31 +148,31 @@ class CreateEditCourseViewModel @Inject constructor(
                 result.fold(
                     onSuccess = { courseId ->
                         Log.d("CreateCourse", "Curso creado: $courseId")
-                        if (publish) _coursePublished.value = true
-                        _navigateBack.value = true
+                        _uiState.update {
+                            it.copy(
+                                coursePublished = if (publish) true else it.coursePublished,
+                                navigateBack = true
+                            )
+                        }
                     },
                     onFailure = { error ->
                         Log.e("CreateCourse", "Error al crear curso: ${error.message}")
                     }
                 )
             } finally {
-                _isLoading.value = false
+                _uiState.update { it.copy(isLoading = false) }
             }
         }
     }
 
-    fun updateCourse(
-        courseId: String,
-        title: String,
-        description: String,
-        coverImage: String,
-        blocks: List<EditableBlock>,
-        publish: Boolean
-    ) {
+    // Actualizar curso existente
+
+    fun updateCourse(courseId: String, publish: Boolean) {
+        val state = _uiState.value
         viewModelScope.launch {
-            _isLoading.value = true
+            _uiState.update { it.copy(isLoading = true) }
             try {
-                val blockInputs = blocks.mapIndexed { index, block ->
+                val blockInputs = state.blocks.mapIndexed { index, block ->
                     BlockInput(
                         type = block.type.lowercase(),
                         content = block.content,
@@ -137,30 +182,32 @@ class CreateEditCourseViewModel @Inject constructor(
 
                 val result = updateCourseUseCase(
                     courseId = courseId,
-                    title = title,
-                    description = description,
-                    coverImage = coverImage,
+                    title = state.title,
+                    description = state.description,
+                    coverImage = state.coverImage,
                     blocks = blockInputs,
                     publish = publish
                 )
 
                 result.onSuccess {
-                    _navigateBack.value = true
+                    _uiState.update { it.copy(navigateBack = true) }
                 }
                 result.onFailure {
                     Log.e("EditCourse", "Error al actualizar curso: ${it.message}")
                 }
             } finally {
-                _isLoading.value = false
+                _uiState.update { it.copy(isLoading = false) }
             }
         }
     }
+
+    // Subir imagen
 
     suspend fun uploadImage(file: File): Result<String> {
         return uploadImageUseCase(file)
     }
 
     fun resetNavigateBack() {
-        _navigateBack.value = false
+        _uiState.update { it.copy(navigateBack = false) }
     }
 }

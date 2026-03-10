@@ -14,6 +14,7 @@ import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -24,7 +25,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
-import kotlinx.coroutines.launch
+import com.example.cursy.features.profile.presentation.viewmodels.EditProfileViewModel
 import java.io.File
 
 private val GreenPrimary = Color(0xFF2ECC71)
@@ -32,50 +33,33 @@ private val GreenPrimary = Color(0xFF2ECC71)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EditProfileScreen(
+    viewModel: EditProfileViewModel,
     initialName: String,
     initialBio: String,
     initialUniversity: String,
     initialProfileImage: String,
-    onNavigateBack: () -> Unit,
-    onSave: suspend (name: String, profileImage: String?, bio: String, university: String) -> Result<Unit>,
-    onUploadImage: suspend (File) -> Result<String>
+    onNavigateBack: () -> Unit
 ) {
-    var name by remember { mutableStateOf(initialName) }
-    var bio by remember { mutableStateOf(initialBio) }
-    var university by remember { mutableStateOf(initialUniversity) }
-    var profileImageUrl by remember { mutableStateOf(initialProfileImage) }
-    var isLoading by remember { mutableStateOf(false) }
-    var isUploading by remember { mutableStateOf(false) }
-    
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+
+    LaunchedEffect(Unit) {
+        viewModel.initProfile(initialName, initialBio, initialUniversity, initialProfileImage)
+    }
+
     val context = LocalContext.current
-    val scope = rememberCoroutineScope()
-    
+
     val imagePicker = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
         uri?.let { selectedUri ->
-            scope.launch {
-                isUploading = true
-                try {
-                    val inputStream = context.contentResolver.openInputStream(selectedUri)
-                    val tempFile = File.createTempFile("profile_", ".jpg", context.cacheDir)
-                    inputStream?.use { input ->
-                        tempFile.outputStream().use { output ->
-                            input.copyTo(output)
-                        }
-                    }
-                    
-                    val result = onUploadImage(tempFile)
-                    result.fold(
-                        onSuccess = { url ->
-                            profileImageUrl = url
-                        },
-                        onFailure = { /* Handle error */ }
-                    )
-                } finally {
-                    isUploading = false
+            val inputStream = context.contentResolver.openInputStream(selectedUri)
+            val tempFile = File.createTempFile("profile_", ".jpg", context.cacheDir)
+            inputStream?.use { input ->
+                tempFile.outputStream().use { output ->
+                    input.copyTo(output)
                 }
             }
+            viewModel.uploadImage(tempFile)
         }
     }
 
@@ -115,8 +99,8 @@ fun EditProfileScreen(
                     .clickable { imagePicker.launch("image/*") }
             ) {
                 AsyncImage(
-                    model = profileImageUrl.ifEmpty {
-                        "https://via.placeholder.com/120/2ecc71/FFFFFF?text=${name.firstOrNull() ?: 'U'}"
+                    model = uiState.profileImageUrl.ifEmpty {
+                        "https://via.placeholder.com/120/2ecc71/FFFFFF?text=${uiState.name.firstOrNull() ?: 'U'}"
                     },
                     contentDescription = "Foto de perfil",
                     modifier = Modifier
@@ -135,7 +119,7 @@ fun EditProfileScreen(
                         .border(2.dp, MaterialTheme.colorScheme.surface, CircleShape),
                     contentAlignment = Alignment.Center
                 ) {
-                    if (isUploading) {
+                    if (uiState.isUploading) {
                         CircularProgressIndicator(
                             modifier = Modifier.size(20.dp),
                             strokeWidth = 2.dp,
@@ -163,8 +147,8 @@ fun EditProfileScreen(
             Spacer(modifier = Modifier.height(32.dp))
 
             OutlinedTextField(
-                value = name,
-                onValueChange = { name = it },
+                value = uiState.name,
+                onValueChange = { viewModel.onNameChange(it) },
                 label = { Text("Nombre") },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
@@ -178,8 +162,8 @@ fun EditProfileScreen(
             Spacer(modifier = Modifier.height(16.dp))
 
             OutlinedTextField(
-                value = university,
-                onValueChange = { university = it },
+                value = uiState.university,
+                onValueChange = { viewModel.onUniversityChange(it) },
                 label = { Text("Universidad") },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
@@ -193,8 +177,8 @@ fun EditProfileScreen(
             Spacer(modifier = Modifier.height(16.dp))
 
             OutlinedTextField(
-                value = bio,
-                onValueChange = { bio = it },
+                value = uiState.bio,
+                onValueChange = { viewModel.onBioChange(it) },
                 label = { Text("Biografía") },
                 modifier = Modifier
                     .fillMaxWidth()
@@ -212,16 +196,7 @@ fun EditProfileScreen(
 
             Button(
                 onClick = {
-                    scope.launch {
-                        isLoading = true
-                        val imageToSave = if (profileImageUrl != initialProfileImage) profileImageUrl else null
-                        val result = onSave(name, imageToSave, bio, university)
-                        result.fold(
-                            onSuccess = { onNavigateBack() },
-                            onFailure = { /* Handle error */ }
-                        )
-                        isLoading = false
-                    }
+                    viewModel.saveProfile(onSuccess = onNavigateBack)
                 },
                 modifier = Modifier
                     .fillMaxWidth()
@@ -230,9 +205,9 @@ fun EditProfileScreen(
                 colors = ButtonDefaults.buttonColors(
                     containerColor = GreenPrimary
                 ),
-                enabled = !isLoading && !isUploading
+                enabled = !uiState.isLoading && !uiState.isUploading
             ) {
-                if (isLoading) {
+                if (uiState.isLoading) {
                     CircularProgressIndicator(
                         modifier = Modifier.size(24.dp),
                         strokeWidth = 2.dp,

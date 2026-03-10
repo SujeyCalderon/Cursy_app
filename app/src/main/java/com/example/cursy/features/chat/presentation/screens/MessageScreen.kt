@@ -14,6 +14,7 @@ import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Send
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -34,8 +35,8 @@ fun MessageScreen(
     conversationId: String,
     onBackClick: () -> Unit
 ) {
-    val uiState by viewModel.uiState.collectAsState()
-    var messageText by remember { mutableStateOf("") }
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+
     val listState = rememberLazyListState()
 
     LaunchedEffect(conversationId) {
@@ -120,8 +121,8 @@ fun MessageScreen(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 OutlinedTextField(
-                    value = messageText,
-                    onValueChange = { messageText = it },
+                    value = uiState.messageText,
+                    onValueChange = { viewModel.onMessageTextChange(it) },
                     modifier = Modifier.weight(1f),
                     placeholder = { Text("Escribe un mensaje...") },
                     shape = RoundedCornerShape(24.dp)
@@ -129,9 +130,9 @@ fun MessageScreen(
                 Spacer(modifier = Modifier.width(8.dp))
                 IconButton(
                     onClick = {
-                        if (messageText.isNotBlank()) {
-                            viewModel.sendMessage(conversationId, messageText)
-                            messageText = ""
+                        if (uiState.messageText.isNotBlank()) {
+                            viewModel.sendMessage(conversationId, uiState.messageText)
+                            viewModel.clearMessageText()
                         }
                     },
                     colors = IconButtonDefaults.iconButtonColors(containerColor = Color(0xFF00D186))

@@ -12,6 +12,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -36,6 +37,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.launch
 import coil.compose.AsyncImage
+import com.example.cursy.features.course.presentation.viewmodels.CreateEditCourseViewModel
 
 private val GreenPrimary = Color(0xFF2ECC71)
 
@@ -48,50 +50,32 @@ data class EditableBlock(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CreateCourseScreen(
+    viewModel: CreateEditCourseViewModel,
     onNavigateBack: () -> Unit,
-    onPublish: (title: String, description: String, coverImage: String, blocks: List<EditableBlock>) -> Unit,
-    onUploadImage: suspend (File) -> Result<String>,
-    onSaveDraft: (title: String, description: String, coverImage: String, blocks: List<EditableBlock>) -> Unit,
-    initialTitle: String = "",
-    initialDescription: String = "",
-    initialCoverImage: String = "",
-    initialBlocks: List<EditableBlock> = emptyList(),
-    isEditing: Boolean = false
+    isEditing: Boolean = false,
+    courseId: String = ""
 ) {
-    var title by remember { mutableStateOf(initialTitle) }
-    var description by remember { mutableStateOf(initialDescription) }
-    var coverImage by remember { mutableStateOf(initialCoverImage) }
-    var blocks by remember { mutableStateOf(initialBlocks.ifEmpty { listOf(EditableBlock()) }) }
-    var showBlockTypeDialog by remember { mutableStateOf(false) }
-    var isPublishing by remember { mutableStateOf(false) }
-    var isProcessingImage by remember { mutableStateOf(false) }
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    
-    
-    var activeBlockIndex by remember { mutableStateOf<Int?>(null) }
     
     val imagePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
         uri?.let {
-            isProcessingImage = true
+            viewModel.setIsProcessingImage(true)
             scope.launch {
                 val file = uriToFile(context, it)
                 if (file != null) {
-                    val result = onUploadImage(file)
+                    val result = viewModel.uploadImage(file)
                     result.onSuccess { url ->
-                        val index = activeBlockIndex
-                        if (index != null && index < blocks.size) {
-                            // Actualizar bloque de contenido
-                            blocks = blocks.toMutableList().also { list ->
-                                list[index] = list[index].copy(content = url)
-                            }
+                        val index = uiState.activeBlockIndex
+                        if (index != null && index < uiState.blocks.size) {
+                            viewModel.updateBlockContent(index, url)
                             Log.d("CreateCourse", "Media subida para bloque $index: $url")
                         } else {
-                            // Actualizar portada
-                            coverImage = url
+                            viewModel.onCoverImageChange(url)
                             Log.d("CreateCourse", "Portada subida: $url")
                         }
                         android.widget.Toast.makeText(context, "Archivo subido correctamente", android.widget.Toast.LENGTH_SHORT).show()
@@ -103,8 +87,8 @@ fun CreateCourseScreen(
                     Log.e("CreateCourse", "Error al procesar archivo local")
                     android.widget.Toast.makeText(context, "Error al procesar archivo seleccionado", android.widget.Toast.LENGTH_SHORT).show()
                 }
-                isProcessingImage = false
-                activeBlockIndex = null // Reset
+                viewModel.setIsProcessingImage(false)
+                viewModel.setActiveBlockIndex(null)
             }
         }
     }
@@ -125,7 +109,7 @@ fun CreateCourseScreen(
                 },
                 actions = {
                     TextButton(
-                        onClick = { onSaveDraft(title, description, coverImage, blocks) }
+                        onClick = { viewModel.createCourse(publish = false) }
                     ) {
                         Text("Borrador", color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
@@ -143,8 +127,9 @@ fun CreateCourseScreen(
             ) {
                 Button(
                     onClick = {
-                        isPublishing = true
-                        onPublish(title, description, coverImage, blocks)
+                        viewModel.setIsPublishing(true)
+                        if (isEditing) viewModel.updateCourse(courseId, publish = true)
+                        else viewModel.createCourse(publish = true)
                     },
                     modifier = Modifier
                         .fillMaxWidth()
@@ -152,9 +137,9 @@ fun CreateCourseScreen(
                     colors = ButtonDefaults.buttonColors(
                         containerColor = GreenPrimary
                     ),
-                    enabled = title.isNotBlank() && description.isNotBlank() && !isPublishing
+                    enabled = uiState.title.isNotBlank() && uiState.description.isNotBlank() && !uiState.isPublishing
                 ) {
-                    if (isPublishing) {
+                    if (uiState.isPublishing) {
                         CircularProgressIndicator(
                             modifier = Modifier.size(20.dp),
                             color = Color.White,
@@ -194,21 +179,21 @@ fun CreateCourseScreen(
                         .background(MaterialTheme.colorScheme.surface)
                         .border(2.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(12.dp))
                         .clickable { 
-                            activeBlockIndex = null
+                            viewModel.setActiveBlockIndex(null)
                             imagePickerLauncher.launch("image/*") 
                         },
                     contentAlignment = Alignment.Center
                 ) {
-                    if (coverImage.isNotEmpty()) {
+                    if (uiState.coverImage.isNotEmpty()) {
                         AsyncImage(
-                            model = coverImage,
+                            model = uiState.coverImage,
                             contentDescription = "Portada",
                             modifier = Modifier.fillMaxSize(),
                             contentScale = ContentScale.Crop
                         )
 
                         IconButton(
-                            onClick = { coverImage = "" },
+                            onClick = { viewModel.onCoverImageChange("") },
                             modifier = Modifier
                                 .align(Alignment.TopEnd)
                                 .padding(8.dp)
@@ -239,7 +224,7 @@ fun CreateCourseScreen(
                         }
                     }
                     
-                    if (isProcessingImage && activeBlockIndex == null) {
+                    if (uiState.isProcessingImage && uiState.activeBlockIndex == null) {
                          Box(
                             modifier = Modifier
                                 .fillMaxSize()
@@ -262,8 +247,8 @@ fun CreateCourseScreen(
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 OutlinedTextField(
-                    value = title,
-                    onValueChange = { title = it },
+                    value = uiState.title,
+                    onValueChange = { viewModel.onTitleChange(it) },
                     modifier = Modifier.fillMaxWidth(),
                     placeholder = { Text("Ej: Introducción a la Economía") },
                     shape = RoundedCornerShape(12.dp),
@@ -286,8 +271,8 @@ fun CreateCourseScreen(
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 OutlinedTextField(
-                    value = description,
-                    onValueChange = { description = it },
+                    value = uiState.description,
+                    onValueChange = { viewModel.onDescriptionChange(it) },
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(120.dp),
@@ -314,7 +299,7 @@ fun CreateCourseScreen(
                         fontSize = 18.sp
                     )
                     IconButton(
-                        onClick = { showBlockTypeDialog = true }
+                        onClick = { viewModel.showBlockTypeDialog() }
                     ) {
                         Icon(
                             Icons.Default.Add,
@@ -325,78 +310,76 @@ fun CreateCourseScreen(
                 }
             }
 
-            itemsIndexed(blocks) { index, block ->
+            itemsIndexed(uiState.blocks) { index, block ->
                 ContentBlockEditor(
                     block = block,
                     onContentChange = { newContent ->
-                        blocks = blocks.toMutableList().also {
-                            it[index] = block.copy(content = newContent)
-                        }
+                        viewModel.updateBlockContent(index, newContent)
                     },
                     onDelete = {
-                        if (blocks.size > 1) {
-                            blocks = blocks.toMutableList().also { it.removeAt(index) }
+                        if (uiState.blocks.size > 1) {
+                            viewModel.onBlocksChange(uiState.blocks.toMutableList().also { it.removeAt(index) })
                         }
                     },
                     onMoveUp = {
                         if (index > 0) {
-                            blocks = blocks.toMutableList().also {
+                            viewModel.onBlocksChange(uiState.blocks.toMutableList().also {
                                 val temp = it[index]
                                 it[index] = it[index - 1]
                                 it[index - 1] = temp
-                            }
+                            })
                         }
                     },
                     onMoveDown = {
-                        if (index < blocks.size - 1) {
-                            blocks = blocks.toMutableList().also {
+                        if (index < uiState.blocks.size - 1) {
+                            viewModel.onBlocksChange(uiState.blocks.toMutableList().also {
                                 val temp = it[index]
                                 it[index] = it[index + 1]
                                 it[index + 1] = temp
-                            }
+                            })
                         }
                     },
                     onPickMedia = { mimeType ->
-                        activeBlockIndex = index
+                        viewModel.setActiveBlockIndex(index)
                         imagePickerLauncher.launch(mimeType)
                     },
-                    isUploading = isProcessingImage && activeBlockIndex == index
+                    isUploading = uiState.isProcessingImage && uiState.activeBlockIndex == index
                 )
             }
         }
     }
 
-    if (showBlockTypeDialog) {
+    if (uiState.showBlockTypeDialog) {
         AlertDialog(
-            onDismissRequest = { showBlockTypeDialog = false },
+            onDismissRequest = { viewModel.hideBlockTypeDialog() },
             title = { Text("Agregar Bloque") },
             text = {
                 Column {
                     BlockTypeOption("Encabezado", Icons.Default.Title) {
-                        blocks = blocks + EditableBlock(type = "header")
-                        showBlockTypeDialog = false
+                        viewModel.onBlocksChange(uiState.blocks + EditableBlock(type = "header"))
+                        viewModel.hideBlockTypeDialog()
                     }
                     BlockTypeOption("Texto", Icons.Default.TextFields) {
-                        blocks = blocks + EditableBlock(type = "text")
-                        showBlockTypeDialog = false
+                        viewModel.onBlocksChange(uiState.blocks + EditableBlock(type = "text"))
+                        viewModel.hideBlockTypeDialog()
                     }
                     BlockTypeOption("Imagen", Icons.Default.Image) {
-                        blocks = blocks + EditableBlock(type = "image")
-                        showBlockTypeDialog = false
+                        viewModel.onBlocksChange(uiState.blocks + EditableBlock(type = "image"))
+                        viewModel.hideBlockTypeDialog()
                     }
                     BlockTypeOption("Video", Icons.Default.VideoLibrary) {
-                        blocks = blocks + EditableBlock(type = "video")
-                        showBlockTypeDialog = false
+                        viewModel.onBlocksChange(uiState.blocks + EditableBlock(type = "video"))
+                        viewModel.hideBlockTypeDialog()
                     }
                     BlockTypeOption("Código", Icons.Default.Code) {
-                        blocks = blocks + EditableBlock(type = "code")
-                        showBlockTypeDialog = false
+                        viewModel.onBlocksChange(uiState.blocks + EditableBlock(type = "code"))
+                        viewModel.hideBlockTypeDialog()
                     }
                 }
             },
             confirmButton = {},
             dismissButton = {
-                TextButton(onClick = { showBlockTypeDialog = false }) {
+                TextButton(onClick = { viewModel.hideBlockTypeDialog() }) {
                     Text("Cancelar")
                 }
             }
