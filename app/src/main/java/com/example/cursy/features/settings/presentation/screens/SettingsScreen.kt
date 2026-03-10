@@ -12,6 +12,7 @@ import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -20,6 +21,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.cursy.features.settings.presentation.viewmodels.SettingsViewModel
 
 private val GreenPrimary = Color(0xFF2ECC71)
 private val RedDanger = Color(0xFFE74C3C)
@@ -27,14 +29,14 @@ private val RedDanger = Color(0xFFE74C3C)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
+    viewModel: SettingsViewModel,
     onNavigateBack: () -> Unit,
     onLogout: () -> Unit,
     onDeleteAccount: () -> Unit,
     isDarkMode: Boolean,
     onToggleDarkMode: (Boolean) -> Unit
 ) {
-    var showLogoutDialog by remember { mutableStateOf(false) }
-    var showDeleteDialog by remember { mutableStateOf(false) }
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     Scaffold(
         topBar = {
@@ -85,7 +87,7 @@ fun SettingsScreen(
                 iconTint = GreenPrimary,
                 title = "Cerrar Sesión",
                 titleColor = GreenPrimary,
-                onClick = { showLogoutDialog = true }
+                onClick = { viewModel.showLogoutDialog() }
             )
 
             Spacer(modifier = Modifier.height(24.dp))
@@ -99,7 +101,7 @@ fun SettingsScreen(
                 title = "Eliminar Cuenta",
                 titleColor = RedDanger,
                 subtitle = "Esta acción es irreversible",
-                onClick = { showDeleteDialog = true },
+                onClick = { viewModel.showDeleteDialog() },
                 showArrow = true
             )
 
@@ -117,9 +119,9 @@ fun SettingsScreen(
         }
     }
 
-    if (showLogoutDialog) {
+    if (uiState.showLogoutDialog) {
         AlertDialog(
-            onDismissRequest = { showLogoutDialog = false },
+            onDismissRequest = { viewModel.hideLogoutDialog() },
             icon = {
                 Icon(
                     Icons.AutoMirrored.Filled.ExitToApp,
@@ -132,7 +134,7 @@ fun SettingsScreen(
             confirmButton = {
                 Button(
                     onClick = {
-                        showLogoutDialog = false
+                        viewModel.hideLogoutDialog()
                         onLogout()
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = GreenPrimary)
@@ -141,16 +143,16 @@ fun SettingsScreen(
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showLogoutDialog = false }) {
+                TextButton(onClick = { viewModel.hideLogoutDialog() }) {
                     Text("Cancelar")
                 }
             }
         )
     }
 
-    if (showDeleteDialog) {
+    if (uiState.showDeleteDialog) {
         AlertDialog(
-            onDismissRequest = { showDeleteDialog = false },
+            onDismissRequest = { viewModel.hideDeleteDialog() },
             icon = {
                 Icon(
                     Icons.Default.DeleteForever,
@@ -165,7 +167,7 @@ fun SettingsScreen(
             confirmButton = {
                 Button(
                     onClick = {
-                        showDeleteDialog = false
+                        viewModel.hideDeleteDialog()
                         onDeleteAccount()
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = RedDanger)
@@ -174,7 +176,7 @@ fun SettingsScreen(
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showDeleteDialog = false }) {
+                TextButton(onClick = { viewModel.hideDeleteDialog() }) {
                     Text("Cancelar")
                 }
             }
