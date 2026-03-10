@@ -53,6 +53,7 @@ import com.example.cursy.features.chat.presentation.screens.ChatListScreen
 import com.example.cursy.features.chat.presentation.screens.MessageScreen
 import com.example.cursy.features.chat.presentation.screens.UserSearchScreen
 import com.example.cursy.features.chat.presentation.viewmodels.ChatViewModel
+import com.example.cursy.features.profile.presentation.screens.EditProfileScreen
 import kotlinx.coroutines.launch
 
 private val GreenPrimary = Color(0xFF2ECC71)
@@ -270,16 +271,19 @@ fun AppNavigation(
                 val profile = uiState.profile
 
                 if (profile != null) {
-                    com.example.cursy.features.profile.presentation.screens.EditProfileScreen(
-                        initialName         = profile.name,
-                        initialBio          = profile.bio,
-                        initialUniversity   = profile.university,
+                    LaunchedEffect(profile) {
+                        editProfileViewModel.initWith(
+                            name = profile.name,
+                            bio = profile.bio,
+                            university = profile.university,
+                            profileImage = profile.profileImage
+                        )
+                    }
+
+                    EditProfileScreen(
                         initialProfileImage = profile.profileImage,
-                        onNavigateBack      = { navController.popBackStack() },
-                        onSave = { name, profileImage, bio, university ->
-                            editProfileViewModel.updateProfile(name, profileImage, bio, university)
-                        },
-                        onUploadImage = { file -> editProfileViewModel.uploadImage(file) }
+                        onNavigateBack = { navController.popBackStack() },
+                        viewModel = editProfileViewModel
                     )
                 } else {
                     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {

@@ -1,5 +1,7 @@
 package com.example.cursy.features.profile.presentation.screens
 
+import android.Manifest
+import android.content.pm.PackageManager
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -12,6 +14,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.CameraAlt
+import androidx.compose.material.icons.filled.Photo
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -23,72 +26,178 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat
+import androidx.core.content.FileProvider
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
-import kotlinx.coroutines.launch
+import com.example.cursy.features.profile.presentation.viewmodels.EditProfileViewModel
 import java.io.File
+import kotlinx.coroutines.launch
 
 private val GreenPrimary = Color(0xFF2ECC71)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EditProfileScreen(
-    initialName: String,
-    initialBio: String,
-    initialUniversity: String,
     initialProfileImage: String,
     onNavigateBack: () -> Unit,
-    onSave: suspend (name: String, profileImage: String?, bio: String, university: String) -> Result<Unit>,
-    onUploadImage: suspend (File) -> Result<String>
+    viewModel: EditProfileViewModel = hiltViewModel()
 ) {
-    var name by remember { mutableStateOf(initialName) }
-    var bio by remember { mutableStateOf(initialBio) }
-    var university by remember { mutableStateOf(initialUniversity) }
-    var profileImageUrl by remember { mutableStateOf(initialProfileImage) }
-    var isLoading by remember { mutableStateOf(false) }
-    var isUploading by remember { mutableStateOf(false) }
-    
+    val name            by viewModel.name.collectAsStateWithLifecycle()
+    val bio             by viewModel.bio.collectAsStateWithLifecycle()
+    val university      by viewModel.university.collectAsStateWithLifecycle()
+    val profileImageUrl by viewModel.profileImageUrl.collectAsStateWithLifecycle()
+    val isLoading       by viewModel.isLoading.collectAsStateWithLifecycle()
+    val isUploading     by viewModel.isUploading.collectAsStateWithLifecycle()
+    val saveSuccess     by viewModel.saveSuccess.collectAsStateWithLifecycle()
+
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    
-    val imagePicker = rememberLauncherForActivityResult(
+    val sheetState = rememberModalBottomSheetState()
+    var showSheet by remember { mutableStateOf(false) }
+
+    // Uri temporal para la foto de cámara
+    var cameraImageUri by remember { mutableStateOf<Uri?>(null) }
+
+    LaunchedEffect(saveSuccess) {
+        if (saveSuccess) {
+            viewModel.onSaveHandled()
+            onNavigateBack()
+        }
+    }
+
+    // ── Procesar archivo y subir ──────────────────────────────────────────
+    fun processAndUpload(uri: Uri) {
+        val inputStream = context.contentResolver.openInputStream(uri)
+        val tempFile = File.createTempFile("profile_", ".jpg", context.cacheDir)
+        inputStream?.use { input ->
+            tempFile.outputStream().use { output -> input.copyTo(output) }
+        }
+        viewModel.uploadImage(tempFile)
+    }
+
+    // ── Launchers ─────────────────────────────────────────────────────────
+    val galleryLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
-        uri?.let { selectedUri ->
-            scope.launch {
-                isUploading = true
-                try {
-                    val inputStream = context.contentResolver.openInputStream(selectedUri)
-                    val tempFile = File.createTempFile("profile_", ".jpg", context.cacheDir)
-                    inputStream?.use { input ->
-                        tempFile.outputStream().use { output ->
-                            input.copyTo(output)
-                        }
-                    }
-                    
-                    val result = onUploadImage(tempFile)
-                    result.fold(
-                        onSuccess = { url ->
-                            profileImageUrl = url
+        uri?.let { processAndUpload(it) }
+    }
+
+    val cameraLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.TakePicture()
+    ) { success ->
+        if (success) {
+            cameraImageUri?.let { processAndUpload(it) }
+        }
+    }
+
+    // ── Permiso de cámara ─────────────────────────────────────────────────
+    val cameraPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        if (granted) {
+            val photoFile = File.createTempFile("photo_", ".jpg", context.cacheDir)
+            val uri = FileProvider.getUriForFile(
+                context,
+                "${context.packageName}.provider",
+                photoFile
+            )
+            cameraImageUri = uri
+            cameraLauncher.launch(uri)
+        }
+    }
+
+    fun launchCamera() {
+        val permission = Manifest.permission.CAMERA
+        if (ContextCompat.checkSelfPermission(context, permission) == PackageManager.PERMISSION_GRANTED) {
+            val photoFile = File.createTempFile("photo_", ".jpg", context.cacheDir)
+            val uri = FileProvider.getUriForFile(
+                context,
+                "${context.packageName}.provider",
+                photoFile
+            )
+            cameraImageUri = uri
+            cameraLauncher.launch(uri)
+        } else {
+            cameraPermissionLauncher.launch(permission)
+        }
+    }
+
+    // ── Bottom Sheet ──────────────────────────────────────────────────────
+    if (showSheet) {
+        ModalBottomSheet(
+            onDismissRequest = { showSheet = false },
+            sheetState = sheetState
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp)
+                    .padding(bottom = 32.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Text(
+                    text = "Cambiar foto de perfil",
+                    fontWeight = FontWeight.SemiBold,
+                    fontSize = 16.sp,
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
+
+                // Opción: Tomar foto
+                if (viewModel.hasCamera) {
+                    OutlinedButton(
+                        onClick = {
+                            scope.launch { sheetState.hide() }.invokeOnCompletion {
+                                showSheet = false
+                                launchCamera()
+                            }
                         },
-                        onFailure = { /* Handle error */ }
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, GreenPrimary)
+                    ) {
+                        Icon(
+                            Icons.Default.CameraAlt,
+                            contentDescription = null,
+                            tint = GreenPrimary,
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Tomar foto", color = GreenPrimary)
+                    }
+                }
+
+                // Opción: Elegir de galería
+                OutlinedButton(
+                    onClick = {
+                        scope.launch { sheetState.hide() }.invokeOnCompletion {
+                            showSheet = false
+                            galleryLauncher.launch("image/*")
+                        }
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, GreenPrimary)
+                ) {
+                    Icon(
+                        Icons.Default.Photo,
+                        contentDescription = null,
+                        tint = GreenPrimary,
+                        modifier = Modifier.size(20.dp)
                     )
-                } finally {
-                    isUploading = false
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Elegir de galería", color = GreenPrimary)
                 }
             }
         }
     }
 
+    // ── UI Principal ──────────────────────────────────────────────────────
     Scaffold(
         topBar = {
             TopAppBar(
-                title = {
-                    Text(
-                        "Editar Perfil",
-                        fontWeight = FontWeight.SemiBold,
-                        fontSize = 18.sp
-                    )
-                },
+                title = { Text("Editar Perfil", fontWeight = FontWeight.SemiBold, fontSize = 18.sp) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Volver")
@@ -108,11 +217,11 @@ fun EditProfileScreen(
                 .padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-
+            // ── Foto de perfil ────────────────────────────────────────────
             Box(
                 modifier = Modifier
                     .size(120.dp)
-                    .clickable { imagePicker.launch("image/*") }
+                    .clickable { showSheet = true }  // <- abre el bottom sheet
             ) {
                 AsyncImage(
                     model = profileImageUrl.ifEmpty {
@@ -125,7 +234,6 @@ fun EditProfileScreen(
                         .border(3.dp, GreenPrimary, CircleShape),
                     contentScale = ContentScale.Crop
                 )
-                
 
                 Box(
                     modifier = Modifier
@@ -151,20 +259,18 @@ fun EditProfileScreen(
                     }
                 }
             }
-            
+
             Spacer(modifier = Modifier.height(8.dp))
-            
             Text(
                 text = "Toca para cambiar la foto",
                 fontSize = 13.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
-            
             Spacer(modifier = Modifier.height(32.dp))
 
             OutlinedTextField(
                 value = name,
-                onValueChange = { name = it },
+                onValueChange = viewModel::onNameChange,
                 label = { Text("Nombre") },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
@@ -174,12 +280,12 @@ fun EditProfileScreen(
                 ),
                 singleLine = true
             )
-            
+
             Spacer(modifier = Modifier.height(16.dp))
 
             OutlinedTextField(
                 value = university,
-                onValueChange = { university = it },
+                onValueChange = viewModel::onUniversityChange,
                 label = { Text("Universidad") },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
@@ -194,7 +300,7 @@ fun EditProfileScreen(
 
             OutlinedTextField(
                 value = bio,
-                onValueChange = { bio = it },
+                onValueChange = viewModel::onBioChange,
                 label = { Text("Biografía") },
                 modifier = Modifier
                     .fillMaxWidth()
@@ -206,30 +312,16 @@ fun EditProfileScreen(
                 ),
                 maxLines = 4
             )
-            
+
             Spacer(modifier = Modifier.weight(1f))
-            
 
             Button(
-                onClick = {
-                    scope.launch {
-                        isLoading = true
-                        val imageToSave = if (profileImageUrl != initialProfileImage) profileImageUrl else null
-                        val result = onSave(name, imageToSave, bio, university)
-                        result.fold(
-                            onSuccess = { onNavigateBack() },
-                            onFailure = { /* Handle error */ }
-                        )
-                        isLoading = false
-                    }
-                },
+                onClick = { viewModel.saveProfile(initialProfileImage) },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(50.dp),
                 shape = RoundedCornerShape(12.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = GreenPrimary
-                ),
+                colors = ButtonDefaults.buttonColors(containerColor = GreenPrimary),
                 enabled = !isLoading && !isUploading
             ) {
                 if (isLoading) {
@@ -239,11 +331,7 @@ fun EditProfileScreen(
                         color = Color.White
                     )
                 } else {
-                    Text(
-                        "Guardar Cambios",
-                        fontWeight = FontWeight.SemiBold,
-                        fontSize = 16.sp
-                    )
+                    Text("Guardar Cambios", fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
                 }
             }
         }
