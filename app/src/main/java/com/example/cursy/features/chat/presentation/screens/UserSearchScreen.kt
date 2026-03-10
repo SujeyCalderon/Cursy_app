@@ -11,6 +11,7 @@ import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -30,13 +31,11 @@ fun UserSearchScreen(
     onUserClick: (String) -> Unit,
     onBackClick: () -> Unit
 ) {
-    val uiState by viewModel.uiState.collectAsState()
-    var searchQuery by remember { mutableStateOf("") }
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     LaunchedEffect(Unit) {
         viewModel.searchUsers()
     }
-
     LaunchedEffect(viewModel.navigationEvent) {
         viewModel.navigationEvent.collect { conversationId ->
             onUserClick(conversationId)
@@ -62,11 +61,8 @@ fun UserSearchScreen(
         ) {
 
             OutlinedTextField(
-                value = searchQuery,
-                onValueChange = { 
-                    searchQuery = it
-                    viewModel.searchUsers(it)
-                },
+                value = uiState.userSearchQuery,
+                onValueChange = { viewModel.onUserSearchQueryChange(it) },
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(16.dp),

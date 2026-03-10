@@ -12,6 +12,7 @@ import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -38,8 +39,7 @@ fun ChatListScreen(
     onNewChatClick: () -> Unit,
     onBackClick: () -> Unit
 ) {
-    val uiState by viewModel.uiState.collectAsState()
-    var searchQuery by remember { mutableStateOf("") }
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val lifecycleOwner = LocalLifecycleOwner.current
 
     DisposableEffect(lifecycleOwner) {
@@ -81,8 +81,8 @@ fun ChatListScreen(
         ) {
 
             OutlinedTextField(
-                value = searchQuery,
-                onValueChange = { searchQuery = it },
+                value = uiState.chatSearchQuery,
+                onValueChange = { viewModel.onChatSearchQueryChange(it) },
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(16.dp),
@@ -102,7 +102,7 @@ fun ChatListScreen(
             } else {
                 LazyColumn(modifier = Modifier.fillMaxSize()) {
                     items(uiState.conversations.filter { 
-                        it.otherUserName.contains(searchQuery, ignoreCase = true) && it.lastMessage.isNotEmpty()
+                        it.otherUserName.contains(uiState.chatSearchQuery, ignoreCase = true) && it.lastMessage.isNotEmpty()
                     }) { conversation ->
                         ConversationItem(conversation = conversation, onClick = { onChatClick(conversation.id) })
                     }

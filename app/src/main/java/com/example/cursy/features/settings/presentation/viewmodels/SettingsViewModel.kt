@@ -7,9 +7,17 @@ import com.example.cursy.core.di.AuthManager
 import com.example.cursy.core.network.CoursyApi
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+
+data class SettingsUiState(
+    val showLogoutDialog: Boolean = false,
+    val showDeleteDialog: Boolean = false,
+    val navigateToLogin: Boolean = false
+)
 
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
@@ -17,12 +25,28 @@ class SettingsViewModel @Inject constructor(
     private val coursyApi: CoursyApi
 ) : ViewModel() {
 
-    private val _navigateToLogin = MutableStateFlow(false)
-    val navigateToLogin = _navigateToLogin.asStateFlow()
+    private val _uiState = MutableStateFlow(SettingsUiState())
+    val uiState: StateFlow<SettingsUiState> = _uiState.asStateFlow()
+
+    fun showLogoutDialog() {
+        _uiState.update { it.copy(showLogoutDialog = true) }
+    }
+
+    fun hideLogoutDialog() {
+        _uiState.update { it.copy(showLogoutDialog = false) }
+    }
+
+    fun showDeleteDialog() {
+        _uiState.update { it.copy(showDeleteDialog = true) }
+    }
+
+    fun hideDeleteDialog() {
+        _uiState.update { it.copy(showDeleteDialog = false) }
+    }
 
     fun logout() {
         authManager.clear()
-        _navigateToLogin.value = true
+        _uiState.update { it.copy(navigateToLogin = true) }
     }
 
     fun deleteAccount() {
@@ -30,7 +54,7 @@ class SettingsViewModel @Inject constructor(
             try {
                 coursyApi.deleteAccount()
                 authManager.clear()
-                _navigateToLogin.value = true
+                _uiState.update { it.copy(navigateToLogin = true) }
             } catch (e: Exception) {
                 Log.e("Settings", "Error al eliminar cuenta: ${e.message}")
             }
@@ -38,6 +62,6 @@ class SettingsViewModel @Inject constructor(
     }
 
     fun resetNavigation() {
-        _navigateToLogin.value = false
+        _uiState.update { it.copy(navigateToLogin = false) }
     }
 }
