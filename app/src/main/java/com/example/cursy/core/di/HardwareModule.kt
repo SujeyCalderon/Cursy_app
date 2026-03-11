@@ -17,7 +17,10 @@ import javax.inject.Singleton
 abstract class HardwareModule {
 
     @Binds
+    @Singleton
     abstract fun bindDeviceNotifier(deviceNotifier: AndroidDeviceNotifier): DeviceNotifier
+
+    @Binds
     @Singleton
     abstract fun bindCameraManager(impl: AndroidCameraManager): CameraManager
 
