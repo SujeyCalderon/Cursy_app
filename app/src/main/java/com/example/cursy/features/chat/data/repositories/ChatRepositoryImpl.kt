@@ -33,6 +33,7 @@ import okhttp3.Response
 import okhttp3.WebSocket
 import okhttp3.WebSocketListener
 import retrofit2.HttpException
+import com.example.cursy.core.Hardware.Domain.DeviceNotifier
 import javax.inject.Inject
 
 class ChatRepositoryImpl @Inject constructor(
@@ -40,7 +41,8 @@ class ChatRepositoryImpl @Inject constructor(
     private val client: OkHttpClient,
     private val authManager: AuthManager,
     private val chatDao: ChatDao,
-    private val notificationDao: NotificationDao
+    private val notificationDao: NotificationDao,
+    private val deviceNotifier: DeviceNotifier
 ) : ChatRepository {
 
     private val gson = Gson()
@@ -202,6 +204,7 @@ class ChatRepositoryImpl @Inject constructor(
                                     isRead = false
                                 )
                             )
+                            deviceNotifier.playNotificationFeedback()
                         }
                     }
 

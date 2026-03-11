@@ -2,6 +2,7 @@ package com.example.cursy.features.profile.data.repository
 
 import com.example.cursy.core.network.CoursyApi
 import com.example.cursy.core.network.RegisterRequest
+import com.example.cursy.features.login.Local.Dao.HuellaDao
 import com.example.cursy.features.profile.data.remote.mapper.toDomain
 import com.example.cursy.features.profile.data.remote.mapper.toCourseItem
 import com.example.cursy.features.profile.domain.entities.CourseItem
