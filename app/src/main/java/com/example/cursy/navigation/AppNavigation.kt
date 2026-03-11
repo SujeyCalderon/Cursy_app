@@ -55,6 +55,7 @@ import com.example.cursy.features.chat.presentation.screens.ChatListScreen
 import com.example.cursy.features.chat.presentation.screens.MessageScreen
 import com.example.cursy.features.chat.presentation.screens.UserSearchScreen
 import com.example.cursy.features.chat.presentation.viewmodels.ChatViewModel
+import com.example.cursy.features.profile.presentation.screens.EditProfileScreen
 import kotlinx.coroutines.launch
 
 private val GreenPrimary = Color(0xFF2ECC71)
@@ -167,10 +168,10 @@ fun AppNavigation(
             // Pantalla de Explorar
             composable(Screen.Explore.route) {
                 val exploreViewModel: ExploreViewModel = hiltViewModel()
-                val chatViewModel: ChatViewModel = hiltViewModel()  // ← NUEVO
+                val chatViewModel: ChatViewModel = hiltViewModel()
 
                 // Escucha el evento de navegación que emite createConversation()
-                LaunchedEffect(Unit) {                               // ← NUEVO
+                LaunchedEffect(Unit) {
                     chatViewModel.navigationEvent.collect { conversationId ->
                         navController.navigate(Screen.Message.createRoute(conversationId))
                     }
@@ -178,7 +179,7 @@ fun AppNavigation(
 
                 ExploreScreen(
                     viewModel = exploreViewModel,
-                    onMessageClick = { userId ->                     // ← NUEVO
+                    onMessageClick = { userId ->
                         chatViewModel.createConversation(userId)
                         // La navegación ocurre en el LaunchedEffect de arriba
                         // cuando navigationEvent emite el conversationId
@@ -198,7 +199,7 @@ fun AppNavigation(
                 )
             }
 
-            // ── Búsqueda de Usuarios ───────────────────────────────────────
+            // Búsqueda de usuarios
             composable(Screen.UserSearch.route) {
                 val chatViewModel: ChatViewModel = hiltViewModel()
                 UserSearchScreen(
@@ -212,7 +213,7 @@ fun AppNavigation(
                 )
             }
 
-            // ── Mensajes ───────────────────────────────────────────────────
+            //Mensajes
             composable(
                 route = Screen.Message.route,
                 arguments = listOf(navArgument("conversationId") { type = NavType.StringType })
@@ -227,7 +228,7 @@ fun AppNavigation(
                 )
             }
 
-            // ── Perfil ─────────────────────────────────────────────────────
+            // Perfil
             composable(Screen.Profile.route) {
                 val viewModel: ProfileViewModel = hiltViewModel()
                 RefreshOnResume { viewModel.refresh() }
@@ -251,13 +252,13 @@ fun AppNavigation(
                 )
             }
 
-            // ── Configuración ──────────────────────────────────────────────
+            //Configuración
             composable(Screen.Settings.route) {
                 val settingsViewModel: SettingsViewModel = hiltViewModel()
-                val navigateToLogin by settingsViewModel.navigateToLogin.collectAsState()
+                val settingsUiState by settingsViewModel.uiState.collectAsState()
 
-                LaunchedEffect(navigateToLogin) {
-                    if (navigateToLogin) {
+                LaunchedEffect(settingsUiState.navigateToLogin) {
+                    if (settingsUiState.navigateToLogin) {
                         settingsViewModel.resetNavigation()
                         navController.navigate(Screen.Login.route) {
                             popUpTo(0) { inclusive = true }
@@ -266,6 +267,7 @@ fun AppNavigation(
                 }
 
                 SettingsScreen(
+                    viewModel        = settingsViewModel,
                     onNavigateBack   = { navController.popBackStack() },
                     onLogout         = { settingsViewModel.logout() },
                     onDeleteAccount  = { settingsViewModel.deleteAccount() },
@@ -274,7 +276,7 @@ fun AppNavigation(
                 )
             }
 
-            // ── Editar Perfil ──────────────────────────────────────────────
+            //Editar Perfil
             composable(Screen.EditProfile.route) {
                 val profileViewModel: ProfileViewModel = hiltViewModel()
                 val editProfileViewModel: EditProfileViewModel = hiltViewModel()
@@ -282,16 +284,19 @@ fun AppNavigation(
                 val profile = uiState.profile
 
                 if (profile != null) {
-                    com.example.cursy.features.profile.presentation.screens.EditProfileScreen(
-                        initialName         = profile.name,
-                        initialBio          = profile.bio,
-                        initialUniversity   = profile.university,
+                    LaunchedEffect(profile) {
+                        editProfileViewModel.initWith(
+                            name = profile.name,
+                            bio = profile.bio,
+                            university = profile.university,
+                            profileImage = profile.profileImage
+                        )
+                    }
+
+                    EditProfileScreen(
                         initialProfileImage = profile.profileImage,
-                        onNavigateBack      = { navController.popBackStack() },
-                        onSave = { name, profileImage, bio, university ->
-                            editProfileViewModel.updateProfile(name, profileImage, bio, university)
-                        },
-                        onUploadImage = { file -> editProfileViewModel.uploadImage(file) }
+                        onNavigateBack = { navController.popBackStack() },
+                        viewModel = editProfileViewModel
                     )
                 } else {
                     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -300,68 +305,54 @@ fun AppNavigation(
                 }
             }
 
-            // ── Crear Curso ────────────────────────────────────────────────
+            //Crear Curso
             composable(Screen.CreateCourse.route) {
                 val createEditViewModel: CreateEditCourseViewModel = hiltViewModel()
-                val navigateBack    by createEditViewModel.navigateBack.collectAsState()
-                val coursePublished by createEditViewModel.coursePublished.collectAsState()
+                val courseUiState by createEditViewModel.uiState.collectAsState()
 
-                LaunchedEffect(navigateBack) {
-                    if (navigateBack) {
-                        if (coursePublished) hasPublishedCourse = true
+                LaunchedEffect(courseUiState.navigateBack) {
+                    if (courseUiState.navigateBack) {
+                        if (courseUiState.coursePublished) hasPublishedCourse = true
                         createEditViewModel.resetNavigateBack()
                         navController.popBackStack()
                     }
                 }
 
                 CreateCourseScreen(
-                    onNavigateBack = { navController.popBackStack() },
-                    onPublish      = { t, d, c, b -> createEditViewModel.createCourse(t, d, c, b, publish = true) },
-                    onUploadImage  = { file -> createEditViewModel.uploadImage(file) },
-                    onSaveDraft    = { t, d, c, b -> createEditViewModel.createCourse(t, d, c, b, publish = false) }
+                    viewModel      = createEditViewModel,
+                    onNavigateBack = { navController.popBackStack() }
                 )
             }
 
-            // ── Editar Curso ───────────────────────────────────────────────
+            //Editar Curso
             composable(
                 route = Screen.EditCourse.route,
                 arguments = listOf(navArgument("courseId") { type = NavType.StringType })
             ) { backStackEntry ->
                 val courseId = backStackEntry.arguments?.getString("courseId") ?: return@composable
                 val vm: CreateEditCourseViewModel = hiltViewModel()
-                val isLoading          by vm.isLoading.collectAsState()
-                val courseLoaded       by vm.courseLoaded.collectAsState()
-                val navigateBack       by vm.navigateBack.collectAsState()
-                val initialTitle       by vm.initialTitle.collectAsState()
-                val initialDescription by vm.initialDescription.collectAsState()
-                val initialCoverImage  by vm.initialCoverImage.collectAsState()
-                val initialBlocks      by vm.initialBlocks.collectAsState()
+                val editUiState by vm.uiState.collectAsState()
 
                 LaunchedEffect(courseId) { vm.loadCourseForEdit(courseId) }
-                LaunchedEffect(navigateBack) {
-                    if (navigateBack) { vm.resetNavigateBack(); navController.popBackStack() }
+                LaunchedEffect(editUiState.navigateBack) {
+                    if (editUiState.navigateBack) { vm.resetNavigateBack(); navController.popBackStack() }
                 }
 
-                if (isLoading && !courseLoaded) {
+                if (editUiState.isLoading && !editUiState.courseLoaded) {
                     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         CircularProgressIndicator(color = GreenPrimary)
                     }
-                } else if (courseLoaded) {
+                } else if (editUiState.courseLoaded) {
                     CreateCourseScreen(
-                        onNavigateBack     = { navController.popBackStack() },
-                        onPublish          = { t, d, c, b -> vm.updateCourse(courseId, t, d, c, b, publish = true) },
-                        onUploadImage      = { file -> vm.uploadImage(file) },
-                        onSaveDraft        = { t, d, c, b -> vm.updateCourse(courseId, t, d, c, b, publish = false) },
-                        initialTitle       = initialTitle,
-                        initialDescription = initialDescription,
-                        initialCoverImage  = initialCoverImage,
-                        initialBlocks      = initialBlocks,
-                        isEditing          = true
+                        viewModel      = vm,
+                        onNavigateBack = { navController.popBackStack() },
+                        isEditing      = true,
+                        courseId        = courseId
                     )
                 }
             }
 
-            // ── Detalle de Curso ───────────────────────────────────────────
+            //Detalle de Curso
             composable(
                 route = Screen.CourseDetail.route,
                 arguments = listOf(navArgument("courseId") { type = NavType.StringType })
@@ -381,7 +372,7 @@ fun AppNavigation(
     }
 }
 
-// ── Bottom Navigation Bar ──────────────────────────────────────────────────────
+// Barra de navegación inferior
 @Composable
 fun BottomNavigationBar(navController: NavHostController) {
     val items = listOf(
@@ -427,7 +418,7 @@ fun BottomNavigationBar(navController: NavHostController) {
     }
 }
 
-// ── Helper ─────────────────────────────────────────────────────────────────────
+// Utilidad para refrescar al volver a la pantalla
 @Composable
 fun RefreshOnResume(onRefresh: () -> Unit) {
     val lifecycleOwner = LocalLifecycleOwner.current

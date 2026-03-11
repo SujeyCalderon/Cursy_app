@@ -31,7 +31,10 @@ data class ChatUiState(
     val myProfile: com.example.cursy.features.profile.domain.entities.Profile? = null,
     val userStatuses: Map<String, Boolean> = emptyMap(),
     val isLoading: Boolean = false,
-    val error: String? = null
+    val error: String? = null,
+    val messageText: String = "",
+    val chatSearchQuery: String = "",
+    val userSearchQuery: String = ""
 )
 
 @HiltViewModel
@@ -179,5 +182,22 @@ class ChatViewModel @Inject constructor(
                 _uiState.update { it.copy(error = error.message, isLoading = false) }
             }
         }
+    }
+
+    fun onMessageTextChange(value: String) {
+        _uiState.update { it.copy(messageText = value) }
+    }
+
+    fun clearMessageText() {
+        _uiState.update { it.copy(messageText = "") }
+    }
+
+    fun onChatSearchQueryChange(value: String) {
+        _uiState.update { it.copy(chatSearchQuery = value) }
+    }
+
+    fun onUserSearchQueryChange(value: String) {
+        _uiState.update { it.copy(userSearchQuery = value) }
+        searchUsers(value.ifBlank { null })
     }
 }

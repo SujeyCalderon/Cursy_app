@@ -197,7 +197,7 @@ private fun UserCard(
                 .fillMaxWidth()
                 .padding(16.dp)
         ) {
-            // ── Fila superior: avatar + info ──────────────────────────────
+            // Avatar e información del usuario
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.fillMaxWidth()
@@ -282,7 +282,7 @@ private fun UserCard(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // ── Fila inferior: botón Seguir ancho + ícono mensaje ─────────
+            // Botón seguir e ícono de mensaje
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
