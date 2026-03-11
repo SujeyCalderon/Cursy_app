@@ -9,6 +9,8 @@ import com.example.cursy.features.course.domain.usecases.GetCourseDetailUseCase
 import com.example.cursy.features.course.domain.usecases.UpdateCourseUseCase
 import com.example.cursy.features.course.domain.usecases.UploadImageUseCase
 import com.example.cursy.features.course.presentation.screens.EditableBlock
+import com.example.cursy.features.notifications.domain.models.Notification
+import com.example.cursy.features.notifications.domain.usecases.InsertNotificationUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -38,7 +40,8 @@ class CreateEditCourseViewModel @Inject constructor(
     private val createCourseUseCase: CreateCourseUseCase,
     private val updateCourseUseCase: UpdateCourseUseCase,
     private val getCourseDetailUseCase: GetCourseDetailUseCase,
-    private val uploadImageUseCase: UploadImageUseCase
+    private val uploadImageUseCase: UploadImageUseCase,
+    private val insertNotificationUseCase: InsertNotificationUseCase // Added
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(CreateEditCourseUiState())
@@ -148,6 +151,16 @@ class CreateEditCourseViewModel @Inject constructor(
                 result.fold(
                     onSuccess = { courseId ->
                         Log.d("CreateCourse", "Curso creado: $courseId")
+                        // Enviar notificación local
+                        val action = if (publish) "publicado" else "creado como borrador"
+                        val notifTitle = "¡Curso $action!"
+                        val notifMsg = "Tu curso '${state.title}' ha sido $action con éxito."
+                        viewModelScope.launch {
+                            insertNotificationUseCase(
+                                Notification(id = 0, title = notifTitle, message = notifMsg, timestamp = System.currentTimeMillis(), isRead = false)
+                            )
+                        }
+
                         _uiState.update {
                             it.copy(
                                 coursePublished = if (publish) true else it.coursePublished,

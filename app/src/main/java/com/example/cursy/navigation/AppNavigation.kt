@@ -41,6 +41,8 @@ import com.example.cursy.features.feed.presentation.screens.FeedScreen
 import com.example.cursy.features.feed.presentation.viewmodels.FeedViewModel
 import com.example.cursy.features.login.presentation.screens.LoginScreen
 import com.example.cursy.features.login.presentation.viewmodels.AuthViewModel
+import com.example.cursy.features.notifications.presentation.screens.NotificationsScreen
+import com.example.cursy.features.notifications.presentation.viewmodels.NotificationsViewModel
 import com.example.cursy.features.profile.presentation.screens.ProfileScreen
 import com.example.cursy.features.profile.presentation.viewmodels.EditProfileViewModel
 import com.example.cursy.features.profile.presentation.viewmodels.ProfileViewModel
@@ -148,8 +150,18 @@ fun AppNavigation(
                         navController.navigate(Screen.CourseDetail.createRoute(courseId))
                     },
                     onCreateCourse     = { navController.navigate(Screen.CreateCourse.route) },
+                    onNotificationsClick = { navController.navigate(Screen.Notifications.route) },
                     userProfileImage   = userProfileImage,
                     hasPublishedCourse = hasPublishedCourse
+                )
+            }
+
+            // Notificaciones
+            composable(Screen.Notifications.route) {
+                val viewModel: NotificationsViewModel = hiltViewModel()
+                NotificationsScreen(
+                    viewModel = viewModel,
+                    onNavigateBack = { navController.popBackStack() }
                 )
             }
 

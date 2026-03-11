@@ -7,6 +7,8 @@ import com.example.cursy.core.network.CreateConversationRequest
 import com.example.cursy.features.chat.data.local.dao.ChatDao
 import com.example.cursy.features.chat.data.local.mapper.toDomain
 import com.example.cursy.features.chat.data.local.mapper.toEntity
+import com.example.cursy.features.notifications.data.local.NotificationDao
+import com.example.cursy.features.notifications.data.local.NotificationEntity
 import com.example.cursy.features.chat.data.remote.dto.WsMessageDto
 import com.example.cursy.features.chat.data.remote.mapper.toDomain
 import com.example.cursy.features.chat.domain.entities.ChatUser
@@ -37,7 +39,8 @@ class ChatRepositoryImpl @Inject constructor(
     private val api: CoursyApi,
     private val client: OkHttpClient,
     private val authManager: AuthManager,
-    private val chatDao: ChatDao
+    private val chatDao: ChatDao,
+    private val notificationDao: NotificationDao
 ) : ChatRepository {
 
     private val gson = Gson()
@@ -179,6 +182,26 @@ class ChatRepositoryImpl @Inject constructor(
                         val dupes = chatDao.countDuplicates(convId, resolvedSenderId, wsMessage.content)
                         if (dupes == 0) {
                             chatDao.insertMessage(domainMessage.toEntity())
+
+                            var senderName = "Alguien"
+                            try {
+                                val convs = api.getConversations()
+                                val match = convs.find { it.id == convId }
+                                if (match != null && !match.otherUser?.name.isNullOrEmpty()) {
+                                    senderName = match.otherUser?.name ?: "Alguien"
+                                }
+                            } catch (e: Exception) {
+                                // Ignorar si falla la api
+                            }
+
+                            notificationDao.insertNotification(
+                                NotificationEntity(
+                                    title = "Nuevo mensaje",
+                                    message = "$senderName te ha enviado un mensaje.",
+                                    timestamp = System.currentTimeMillis(),
+                                    isRead = false
+                                )
+                            )
                         }
                     }
 

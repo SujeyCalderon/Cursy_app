@@ -7,6 +7,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -35,6 +36,7 @@ fun FeedScreen(
     viewModel: FeedViewModel,
     onCourseClick: (String) -> Unit,
     onCreateCourse: () -> Unit = {},
+    onNotificationsClick: () -> Unit = {},
     userProfileImage: String = "",
     hasPublishedCourse: Boolean = false
 ) {
@@ -60,7 +62,14 @@ fun FeedScreen(
                     )
                 },
                 actions = {
-
+                    IconButton(onClick = onNotificationsClick) {
+                        Icon(
+                            imageVector = Icons.Default.Notifications,
+                            contentDescription = "Notificaciones",
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(8.dp))
                     Box(
                         modifier = Modifier
                             .padding(end = 16.dp)
