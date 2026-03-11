@@ -41,6 +41,8 @@ import com.example.cursy.features.feed.presentation.screens.FeedScreen
 import com.example.cursy.features.feed.presentation.viewmodels.FeedViewModel
 import com.example.cursy.features.login.presentation.screens.LoginScreen
 import com.example.cursy.features.login.presentation.viewmodels.AuthViewModel
+import com.example.cursy.features.notifications.presentation.screens.NotificationsScreen
+import com.example.cursy.features.notifications.presentation.viewmodels.NotificationsViewModel
 import com.example.cursy.features.profile.presentation.screens.ProfileScreen
 import com.example.cursy.features.profile.presentation.viewmodels.EditProfileViewModel
 import com.example.cursy.features.profile.presentation.viewmodels.ProfileViewModel
@@ -53,6 +55,7 @@ import com.example.cursy.features.chat.presentation.screens.ChatListScreen
 import com.example.cursy.features.chat.presentation.screens.MessageScreen
 import com.example.cursy.features.chat.presentation.screens.UserSearchScreen
 import com.example.cursy.features.chat.presentation.viewmodels.ChatViewModel
+import com.example.cursy.features.profile.presentation.screens.EditProfileScreen
 import kotlinx.coroutines.launch
 
 private val GreenPrimary = Color(0xFF2ECC71)
@@ -147,8 +150,18 @@ fun AppNavigation(
                         navController.navigate(Screen.CourseDetail.createRoute(courseId))
                     },
                     onCreateCourse     = { navController.navigate(Screen.CreateCourse.route) },
+                    onNotificationsClick = { navController.navigate(Screen.Notifications.route) },
                     userProfileImage   = userProfileImage,
                     hasPublishedCourse = hasPublishedCourse
+                )
+            }
+
+            // Notificaciones
+            composable(Screen.Notifications.route) {
+                val viewModel: NotificationsViewModel = hiltViewModel()
+                NotificationsScreen(
+                    viewModel = viewModel,
+                    onNavigateBack = { navController.popBackStack() }
                 )
             }
 
@@ -271,13 +284,19 @@ fun AppNavigation(
                 val profile = uiState.profile
 
                 if (profile != null) {
-                    com.example.cursy.features.profile.presentation.screens.EditProfileScreen(
-                        viewModel           = editProfileViewModel,
-                        initialName         = profile.name,
-                        initialBio          = profile.bio,
-                        initialUniversity   = profile.university,
+                    LaunchedEffect(profile) {
+                        editProfileViewModel.initWith(
+                            name = profile.name,
+                            bio = profile.bio,
+                            university = profile.university,
+                            profileImage = profile.profileImage
+                        )
+                    }
+
+                    EditProfileScreen(
                         initialProfileImage = profile.profileImage,
-                        onNavigateBack      = { navController.popBackStack() }
+                        onNavigateBack = { navController.popBackStack() },
+                        viewModel = editProfileViewModel
                     )
                 } else {
                     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {

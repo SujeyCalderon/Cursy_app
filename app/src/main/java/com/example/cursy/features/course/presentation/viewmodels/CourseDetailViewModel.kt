@@ -5,6 +5,8 @@ import androidx.lifecycle.viewModelScope
 import com.example.cursy.features.course.domain.usecases.DeleteCourseUseCase
 import com.example.cursy.features.course.domain.usecases.GetCourseDetailUseCase
 import com.example.cursy.features.course.domain.usecases.SaveCourseUseCase
+import com.example.cursy.features.notifications.domain.models.Notification
+import com.example.cursy.features.notifications.domain.usecases.InsertNotificationUseCase
 import com.example.cursy.features.course.presentation.CourseDetailUiState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -17,7 +19,8 @@ import javax.inject.Inject
 class CourseDetailViewModel @Inject constructor(
     private val getCourseDetailUseCase: GetCourseDetailUseCase,
     private val deleteCourseUseCase: DeleteCourseUseCase,
-    private val saveCourseUseCase: SaveCourseUseCase
+    private val saveCourseUseCase: SaveCourseUseCase,
+    private val insertNotificationUseCase: InsertNotificationUseCase
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(CourseDetailUiState())
@@ -76,6 +79,12 @@ class CourseDetailViewModel @Inject constructor(
             _uiState.update { currentState ->
                 result.fold(
                     onSuccess = {
+                        val title = uiState.value.course?.title ?: "Curso"
+                        viewModelScope.launch {
+                            insertNotificationUseCase(
+                                Notification(id = 0, title = "Curso eliminado", message = "El curso '$title' ha sido eliminado correctamente.", timestamp = System.currentTimeMillis(), isRead = false)
+                            )
+                        }
                         currentState.copy(deleteSuccess = true)
                     },
                     onFailure = { exception ->
@@ -97,7 +106,16 @@ class CourseDetailViewModel @Inject constructor(
 
             val result = saveCourseUseCase(course.id, newSavedState)
 
-            result.onFailure {
+            result.onSuccess {
+                if (newSavedState) {
+                    val title = course.title
+                    viewModelScope.launch {
+                        insertNotificationUseCase(
+                            Notification(id = 0, title = "Curso guardado", message = "Has guardado el curso '$title' en tu perfil.", timestamp = System.currentTimeMillis(), isRead = false)
+                        )
+                    }
+                }
+            }.onFailure {
                 _uiState.update { it.copy(isSaved = !newSavedState) }
             }
         }
