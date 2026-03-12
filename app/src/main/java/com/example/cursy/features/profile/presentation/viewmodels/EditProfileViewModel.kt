@@ -55,6 +55,123 @@ class EditProfileViewModel @Inject constructor(
     fun onBioChange(value: String) { _bio.value = value }
     fun onUniversityChange(value: String) { _university.value = value }
 
+<<<<<<< Updated upstream
+=======
+    fun activarHuella(activity: FragmentActivity) {
+        val userId = authManager.getCurrentUserId()
+        val token = authManager.getAuthToken()
+
+        Log.d("EditProfileVM", "activarHuella - userId: $userId")
+        Log.d("EditProfileVM", "activarHuella - token: ${token?.take(10)}")
+
+        if (userId == null || token == null) {
+            Log.e("EditProfileVM", "activarHuella - sesión inválida")
+            _huellaMessage.value = "Sesión no válida"
+            return
+        }
+
+        val keyAlias = "cursy_key_$userId"
+        Log.d("EditProfileVM", "activarHuella - keyAlias: $keyAlias")
+
+        if (!biometricManager.generateKey(keyAlias)) {
+            Log.e("EditProfileVM", "activarHuella - error generando key")
+            _huellaMessage.value = "Error al generar clave biométrica"
+            return
+        }
+
+
+        val cipher = biometricManager.getCipherForEncryption(keyAlias)
+        if (cipher == null) {
+            Log.e("EditProfileVM", "activarHuella - cipher null")
+            _huellaMessage.value = "Error al preparar cifrado"
+            return
+        }
+
+        Log.d("EditProfileVM", "activarHuella - mostrando prompt biométrico")
+        val executor = ContextCompat.getMainExecutor(activity)
+        BiometricPrompt(
+            activity,
+            executor,
+            object : BiometricPrompt.AuthenticationCallback() {
+                override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
+                    Log.d("EditProfileVM", "autenticación exitosa, cifrando token")
+                    viewModelScope.launch {
+
+                        val authenticatedCipher = result.cryptoObject?.cipher
+                        if (authenticatedCipher == null) {
+                            Log.e("EditProfileVM", "authenticatedCipher es null")
+                            _huellaMessage.value = "Error al obtener cipher autenticado"
+                            return@launch
+                        }
+
+                        val encryptedToken = biometricManager.encryptWithCipher(authenticatedCipher, token)
+                        if (encryptedToken == null) {
+                            Log.e("EditProfileVM", "encryptedToken es null")
+                            _huellaMessage.value = "Error al cifrar el token"
+                            return@launch
+                        }
+
+                        biometricManager.saveHuella(
+                            Biometric(
+                                userId = userId,
+                                keyUser = keyAlias,
+                                tokenLogin = encryptedToken,
+                                stateHuella = true
+                            )
+                        ).fold(
+                            onSuccess = {
+                                _huellaEnabled.value = true
+                                _huellaMessage.value = "¡Huella activada correctamente!"
+                                Log.d("EditProfileVM", "Huella activada y guardada")
+                            },
+                            onFailure = {
+                                Log.e("EditProfileVM", "Error guardando huella: ${it.message}")
+                                _huellaMessage.value = "Error al guardar la huella"
+                            }
+                        )
+                    }
+                }
+
+                override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {
+                    Log.e("EditProfileVM", "onAuthenticationError: $errorCode - $errString")
+                    _huellaMessage.value = "Error: $errString"
+                }
+
+                override fun onAuthenticationFailed() {
+                    Log.w("EditProfileVM", "onAuthenticationFailed")
+                    _huellaMessage.value = "Huella no reconocida"
+                }
+            }
+        ).authenticate(
+            BiometricPrompt.PromptInfo.Builder()
+                .setTitle("Activar inicio con huella")
+                .setSubtitle("Confirma tu huella para activar el acceso biométrico")
+                .setNegativeButtonText("Cancelar")
+                .build(),
+            BiometricPrompt.CryptoObject(cipher)
+        )
+    }
+
+    fun desactivarHuella() {
+        val userId = authManager.getCurrentUserId() ?: return
+        viewModelScope.launch {
+            biometricManager.deleteHuella(userId).fold(
+                onSuccess = {
+                    _huellaEnabled.value = false
+                    _huellaMessage.value = "Huella desactivada"
+                    Log.d("EditProfileVM", "Huella desactivada")
+                },
+                onFailure = {
+                    Log.e("EditProfileVM", "Error desactivando huella: ${it.message}")
+                    _huellaMessage.value = "Error al desactivar"
+                }
+            )
+        }
+    }
+
+    fun onHuellaMessageHandled() { _huellaMessage.value = "" }
+
+>>>>>>> Stashed changes
     fun uploadImage(file: File) {
         viewModelScope.launch {
             _isUploading.value = true
