@@ -26,6 +26,7 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import com.example.cursy.components.PublishFirstDialog
+import com.example.cursy.features.Review.Presentation.Screen.EmbeddedReviews
 import com.example.cursy.features.course.domain.entities.ContentBlock
 import com.example.cursy.features.course.domain.entities.ContentBlockType
 import com.example.cursy.features.course.presentation.viewmodels.CourseDetailViewModel
@@ -250,6 +251,23 @@ fun CourseDetailScreen(
 
                         item {
                             Spacer(modifier = Modifier.height(24.dp))
+                        }
+
+                        item {
+                            Spacer(modifier = Modifier.height(24.dp))
+                            HorizontalDivider()
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = "COMENTARIOS",
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.Medium,
+                                modifier = Modifier.padding(horizontal = 16.dp)
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                        }
+
+                        item {
+                            EmbeddedReviews(courseId = courseId)
                         }
                     }
                 }
