@@ -85,6 +85,18 @@ interface CoursyApi {
         @Path("id") conversationId: String,
         @Body request: SendMessageRequest
     ): com.example.cursy.features.chat.data.remote.dto.MessageDto
+
+    //COMENTARIOS DE CADA CURSO
+    @GET("courses/{courseId}/comments")
+    suspend fun getComments(
+        @Path("courseId") courseId: String
+    ): com.example.cursy.features.Review.Data.Remote.Dto.GetCommentsResponse
+
+    @POST("courses/{courseId}/comments")
+    suspend fun createComment(
+        @Path("courseId") courseId: String,
+        @Body body: com.example.cursy.features.Review.Data.Remote.Dto.CreateCommentRequest
+    ): com.example.cursy.features.Review.Data.Remote.Dto.CreateCommentResponse
 }
 
 data class UsersResponse(

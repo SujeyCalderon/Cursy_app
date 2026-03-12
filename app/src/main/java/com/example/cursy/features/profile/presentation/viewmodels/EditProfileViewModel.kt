@@ -1,9 +1,17 @@
 package com.example.cursy.features.profile.presentation.viewmodels
 
+import android.util.Log
+import androidx.biometric.BiometricPrompt
+import androidx.core.content.ContextCompat
+import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.cursy.core.Hardware.Domain.BiometricManager
 import com.example.cursy.core.Hardware.Domain.CameraManager
+import com.example.cursy.core.di.AuthManager
 import com.example.cursy.features.course.domain.usecases.UploadImageUseCase
+import com.example.cursy.features.profile.domain.entities.Biometric
+import com.example.cursy.features.profile.domain.usecases.GetMyProfileUseCase
 import com.example.cursy.features.profile.domain.usecases.UpdateProfileUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -17,7 +25,10 @@ import javax.inject.Inject
 class EditProfileViewModel @Inject constructor(
     private val updateProfileUseCase: UpdateProfileUseCase,
     private val uploadImageUseCase: UploadImageUseCase,
-    private val cameraManager: CameraManager
+    private val getMyProfileUseCase: GetMyProfileUseCase,
+    private val cameraManager: CameraManager,
+    private val biometricManager: BiometricManager,
+    private val authManager: AuthManager
 ) : ViewModel() {
 
     private val _name = MutableStateFlow("")
@@ -41,22 +52,42 @@ class EditProfileViewModel @Inject constructor(
     private val _saveSuccess = MutableStateFlow(false)
     val saveSuccess: StateFlow<Boolean> = _saveSuccess.asStateFlow()
 
-    // True = tiene cámara disponible en el dispositivo
+    private val _huellaEnabled = MutableStateFlow(false)
+    val huellaEnabled: StateFlow<Boolean> = _huellaEnabled.asStateFlow()
+
+    private val _huellaMessage = MutableStateFlow("")
+    val huellaMessage: StateFlow<String> = _huellaMessage.asStateFlow()
+
     val hasCamera: Boolean get() = cameraManager.hasCamera()
+    val isBiometricAvailable: Boolean get() = biometricManager.isBiometricAvailable()
 
     fun initWith(name: String, bio: String, university: String, profileImage: String) {
         _name.value = name
         _bio.value = bio
         _university.value = university
         _profileImageUrl.value = profileImage
+
+        val userId = authManager.getCurrentUserId()
+        Log.d("EditProfileVM", "initWith - userId: $userId")
+        Log.d("EditProfileVM", "initWith - token: ${authManager.getAuthToken()?.take(10)}")
+        Log.d("EditProfileVM", "initWith - isBiometricAvailable: ${biometricManager.isBiometricAvailable()}")
+
+        userId ?: return
+        viewModelScope.launch {
+            biometricManager.getHuella(userId).fold(
+                onSuccess = { biometric ->
+                    _huellaEnabled.value = biometric?.stateHuella == true
+                    Log.d("EditProfileVM", "huellaEnabled: ${_huellaEnabled.value}")
+                },
+                onFailure = { Log.e("EditProfileVM", "Error obteniendo huella: ${it.message}") }
+            )
+        }
     }
 
     fun onNameChange(value: String) { _name.value = value }
     fun onBioChange(value: String) { _bio.value = value }
     fun onUniversityChange(value: String) { _university.value = value }
 
-<<<<<<< Updated upstream
-=======
     fun activarHuella(activity: FragmentActivity) {
         val userId = authManager.getCurrentUserId()
         val token = authManager.getAuthToken()
@@ -79,7 +110,6 @@ class EditProfileViewModel @Inject constructor(
             return
         }
 
-
         val cipher = biometricManager.getCipherForEncryption(keyAlias)
         if (cipher == null) {
             Log.e("EditProfileVM", "activarHuella - cipher null")
@@ -96,7 +126,6 @@ class EditProfileViewModel @Inject constructor(
                 override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
                     Log.d("EditProfileVM", "autenticación exitosa, cifrando token")
                     viewModelScope.launch {
-
                         val authenticatedCipher = result.cryptoObject?.cipher
                         if (authenticatedCipher == null) {
                             Log.e("EditProfileVM", "authenticatedCipher es null")
@@ -171,13 +200,12 @@ class EditProfileViewModel @Inject constructor(
 
     fun onHuellaMessageHandled() { _huellaMessage.value = "" }
 
->>>>>>> Stashed changes
     fun uploadImage(file: File) {
         viewModelScope.launch {
             _isUploading.value = true
             uploadImageUseCase(file).fold(
                 onSuccess = { url -> _profileImageUrl.value = url },
-                onFailure = { }
+                onFailure = { Log.e("EditProfileVM", "Error subiendo imagen: ${it.message}") }
             )
             _isUploading.value = false
         }
@@ -194,7 +222,7 @@ class EditProfileViewModel @Inject constructor(
                 university = _university.value
             ).fold(
                 onSuccess = { _saveSuccess.value = true },
-                onFailure = { }
+                onFailure = { Log.e("EditProfileVM", "Error guardando perfil: ${it.message}") }
             )
             _isLoading.value = false
         }
