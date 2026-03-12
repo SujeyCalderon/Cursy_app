@@ -1,5 +1,6 @@
 package com.example.cursy.features.Review.Presentation.Viewmodels
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.cursy.features.Review.Domain.UseCases.CreateCommentUseCase
@@ -101,21 +102,38 @@ class ReviewsViewModel @Inject constructor(
 
     private fun formatRelativeDate(dateStr: String): String {
         return try {
+            val cleanDate = if (dateStr.contains(".")) {
+                dateStr.substringBefore(".") + "Z"
+            } else {
+                dateStr
+            }
+
             val sdf = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.getDefault())
             sdf.timeZone = TimeZone.getTimeZone("UTC")
-            val date = sdf.parse(dateStr) ?: return dateStr
+            val date = sdf.parse(cleanDate) ?: return dateStr
+            
             val now = Date()
-            val diffMs    = now.time - date.time
-            val diffHours = diffMs / (1000 * 60 * 60)
-            val diffDays  = diffMs / (1000 * 60 * 60 * 24)
+            val diffMs = now.time - date.time
+            val diffSecs = diffMs / 1000
+            val diffMins = diffSecs / 60
+            val diffHours = diffMins / 60
+            val diffDays = diffHours / 24
+
             when {
-                diffHours < 1  -> "Hace menos de 1 hora"
-                diffHours < 24 -> "Hace $diffHours hora${if (diffHours > 1) "s" else ""}"
+                diffSecs < 60 -> "Hace un momento"
+                diffMins < 60 -> "Hace $diffMins min"
+                diffHours < 24 -> {
+                    if (diffHours == 1L) "Hace 1 hora" else "Hace $diffHours horas"
+                }
                 diffDays == 1L -> "Ayer"
-                diffDays < 7   -> "Hace $diffDays días"
-                else           -> SimpleDateFormat("dd MMM yyyy", Locale("es")).format(date)
+                diffDays < 7 -> "Hace $diffDays días"
+                else -> {
+                    val outFormat = SimpleDateFormat("dd 'de' MMM, hh:mm a", Locale("es", "MX"))
+                    outFormat.format(date)
+                }
             }
         } catch (e: Exception) {
+            Log.e("ReviewsViewModel", "Error parsing date: $dateStr", e)
             dateStr
         }
     }

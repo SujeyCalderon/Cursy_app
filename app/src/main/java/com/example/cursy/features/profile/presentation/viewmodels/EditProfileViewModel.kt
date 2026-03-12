@@ -110,8 +110,6 @@ class EditProfileViewModel @Inject constructor(
             return
         }
 
-        // Prepara el Cipher ANTES de mostrar el prompt
-        // y lo pasa como CryptoObject para que el sistema lo autentique
         val cipher = biometricManager.getCipherForEncryption(keyAlias)
         if (cipher == null) {
             Log.e("EditProfileVM", "activarHuella - cipher null")
@@ -128,7 +126,6 @@ class EditProfileViewModel @Inject constructor(
                 override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
                     Log.d("EditProfileVM", "autenticación exitosa, cifrando token")
                     viewModelScope.launch {
-                        // Usa el cipher autenticado que viene del CryptoObject
                         val authenticatedCipher = result.cryptoObject?.cipher
                         if (authenticatedCipher == null) {
                             Log.e("EditProfileVM", "authenticatedCipher es null")
@@ -180,7 +177,7 @@ class EditProfileViewModel @Inject constructor(
                 .setSubtitle("Confirma tu huella para activar el acceso biométrico")
                 .setNegativeButtonText("Cancelar")
                 .build(),
-            BiometricPrompt.CryptoObject(cipher) // <- pasa el cipher aquí
+            BiometricPrompt.CryptoObject(cipher)
         )
     }
 

@@ -15,7 +15,7 @@ class AndroidDeviceNotifier @Inject constructor(
 ) : DeviceNotifier {
 
     override fun playNotificationFeedback() {
-        // Reproducir sonido por defecto de notificación
+
         try {
             val notificationUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
             val ringtone = RingtoneManager.getRingtone(context, notificationUri)
@@ -24,7 +24,7 @@ class AndroidDeviceNotifier @Inject constructor(
             e.printStackTrace()
         }
 
-        // Vibrar el dispositivo
+
         try {
             val vibrator = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                 val vibratorManager = context.getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as VibratorManager
