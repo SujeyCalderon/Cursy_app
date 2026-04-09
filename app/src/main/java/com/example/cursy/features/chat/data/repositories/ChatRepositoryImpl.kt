@@ -63,6 +63,7 @@ class ChatRepositoryImpl @Inject constructor(
     private var webSocket: WebSocket? = null
     private val repositoryScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val conversationReceiverCache = java.util.concurrent.ConcurrentHashMap<String, String>()
+    private var activeConversationId: String? = null
 
 
     // Observa los mensajes desde Room (fuente de verdad)
@@ -235,8 +236,12 @@ class ChatRepositoryImpl @Inject constructor(
                                     isRead = false
                                 )
                             )
-                            deviceNotifier.playNotificationFeedback()
-                            showLocalNotification(senderName, wsMessage.content)
+
+                            // Solo notificar si NO estamos en la conversación activa
+                            if (convId != activeConversationId) {
+                                deviceNotifier.playNotificationFeedback()
+                                showLocalNotification(senderName, wsMessage.content)
+                            }
                         }
                     }
 
@@ -388,5 +393,9 @@ class ChatRepositoryImpl @Inject constructor(
             .build()
 
         notificationManager.notify(System.currentTimeMillis().toInt(), notification)
+    }
+
+    override fun updateActiveConversation(conversationId: String?) {
+        activeConversationId = conversationId
     }
 }

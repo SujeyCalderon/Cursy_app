@@ -23,4 +23,7 @@ interface ChatRepository {
 
     // Observar mensajes desde Room (fuente de verdad)
     fun observeMessagesFromDb(conversationId: String): Flow<List<Message>>
+
+    // Seguimiento de conversación activa para suprimir notificaciones
+    fun updateActiveConversation(conversationId: String?)
 }
