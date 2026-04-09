@@ -34,6 +34,15 @@ import okhttp3.WebSocket
 import okhttp3.WebSocketListener
 import retrofit2.HttpException
 import com.example.cursy.core.Hardware.Domain.DeviceNotifier
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.app.PendingIntent
+import android.content.Context
+import android.content.Intent
+import androidx.core.app.NotificationCompat
+import com.example.cursy.MainActivity
+import com.example.cursy.R
+import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 
 class ChatRepositoryImpl @Inject constructor(
@@ -42,7 +51,8 @@ class ChatRepositoryImpl @Inject constructor(
     private val authManager: AuthManager,
     private val chatDao: ChatDao,
     private val notificationDao: NotificationDao,
-    private val deviceNotifier: DeviceNotifier
+    private val deviceNotifier: DeviceNotifier,
+    @ApplicationContext private val context: Context
 ) : ChatRepository {
 
     private val gson = Gson()
@@ -205,6 +215,7 @@ class ChatRepositoryImpl @Inject constructor(
                                 )
                             )
                             deviceNotifier.playNotificationFeedback()
+                            showLocalNotification(senderName, wsMessage.content)
                         }
                     }
 
@@ -303,5 +314,38 @@ class ChatRepositoryImpl @Inject constructor(
             chatDao.updateMessageStatus(localId, MessageStatus.FAILED.name)
             Result.failure(e)
         }
+    }
+
+    private fun showLocalNotification(title: String, message: String) {
+        val intent = Intent(context, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
+        }
+        val pendingIntent = PendingIntent.getActivity(
+            context, 0, intent,
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+        )
+
+        val channelId = "cursy_notifications"
+        val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+            val channel = NotificationChannel(
+                channelId,
+                "Cursy Notifications",
+                NotificationManager.IMPORTANCE_HIGH
+            )
+            notificationManager.createNotificationChannel(channel)
+        }
+
+        val notification = NotificationCompat.Builder(context, channelId)
+            .setSmallIcon(R.mipmap.ic_launcher)
+            .setContentTitle(title)
+            .setContentText(message)
+            .setAutoCancel(true)
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setContentIntent(pendingIntent)
+            .build()
+
+        notificationManager.notify(System.currentTimeMillis().toInt(), notification)
     }
 }
