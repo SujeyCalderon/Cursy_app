@@ -9,9 +9,10 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.cursy.core.Hardware.Domain.BiometricManager
 import com.example.cursy.core.di.AuthManager
-import com.example.cursy.core.network.LoginResponse
-import com.example.cursy.core.network.UserResponse
+import com.example.cursy.core.network.*
 import com.example.cursy.features.login.domain.usecases.LoginUseCase
+import com.google.firebase.messaging.FirebaseMessaging
+import kotlinx.coroutines.tasks.await
 import com.example.cursy.features.profile.domain.entities.Biometric
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -24,7 +25,8 @@ import javax.inject.Inject
 class LoginViewModel @Inject constructor(
     private val loginUseCase: LoginUseCase,
     private val biometricManager: BiometricManager,
-    private val authManager: AuthManager
+    private val authManager: AuthManager,
+    private val api: CoursyApi
 ) : ViewModel() {
 
     private val _email = MutableStateFlow("")
@@ -83,6 +85,10 @@ class LoginViewModel @Inject constructor(
                     Log.d("LoginViewModel", "Login exitoso - token: ${response.token.take(10)}...")
                     authManager.setAuthToken(response.token)
                     authManager.setCurrentUserId(response.user.id)
+                    
+                    // Sincronizar Token de FCM inmediatamente tras el login
+                    syncFCMToken()
+                    
                     _loginSuccess.value = response
                 },
                 onFailure = { exception ->
@@ -158,6 +164,10 @@ class LoginViewModel @Inject constructor(
                         }
                         authManager.setAuthToken(decryptedToken)
                         authManager.setCurrentUserId(biometric.userId.toString())
+                        
+                        // Sincronizar Token de FCM tras login con huella
+                        syncFCMToken()
+
                         _loginSuccess.value = LoginResponse(
                             message = "Login exitoso con huella",
                             token = decryptedToken,
@@ -193,5 +203,17 @@ class LoginViewModel @Inject constructor(
                 .build(),
             BiometricPrompt.CryptoObject(cipher)
         )
+    }
+
+    private fun syncFCMToken() {
+        viewModelScope.launch {
+            try {
+                val token = FirebaseMessaging.getInstance().token.await()
+                api.updateFCMToken(FCMTokenRequest(token))
+                Log.d("LoginViewModel", "Token FCM sincronizado tras login")
+            } catch (e: Exception) {
+                Log.e("LoginViewModel", "Error al sincronizar FCM token tras login", e)
+            }
+        }
     }
 }

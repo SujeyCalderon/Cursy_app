@@ -3,6 +3,8 @@ package com.example.cursy
 import android.Manifest
 import android.content.Context
 import android.content.pm.PackageManager
+import android.app.NotificationChannel
+import android.app.NotificationManager
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.compose.setContent
@@ -46,6 +48,7 @@ class MainActivity : FragmentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        createNotificationChannel()
         askNotificationPermission()
 
         val prefs = getSharedPreferences("cursy_prefs", Context.MODE_PRIVATE)
@@ -106,6 +109,20 @@ class MainActivity : FragmentActivity() {
             } else {
                 requestPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
             }
+        }
+    }
+
+    private fun createNotificationChannel() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val channelId = "cursy_notifications"
+            val channelName = "Cursy Notifications"
+            val channelDescription = "Notificaciones de mensajes y cursos"
+            val importance = NotificationManager.IMPORTANCE_HIGH
+            val channel = NotificationChannel(channelId, channelName, importance).apply {
+                description = channelDescription
+            }
+            val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            notificationManager.createNotificationChannel(channel)
         }
     }
 }
