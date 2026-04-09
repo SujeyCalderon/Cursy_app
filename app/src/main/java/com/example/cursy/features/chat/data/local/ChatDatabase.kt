@@ -8,7 +8,7 @@ import com.example.cursy.features.login.Local.Dao.HuellaDao
 import com.example.cursy.features.login.Local.Entities.BiometricEntity
 
 @Database(entities = [MessageEntity::class,
-    BiometricEntity::class], version = 2, exportSchema = false)
+    BiometricEntity::class], version = 3, exportSchema = false)
 abstract class ChatDatabase : RoomDatabase() {
     abstract fun chatDao(): ChatDao
     abstract fun huellaDao(): HuellaDao
