@@ -8,6 +8,9 @@ import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.cursy.core.Hardware.Domain.BiometricManager
+import com.example.cursy.core.di.AuthManager
+import com.example.cursy.core.network.*
+import com.example.cursy.features.login.domain.usecases.LoginUseCase
 import com.example.cursy.core.services.ChatForegroundService
 import com.google.firebase.messaging.FirebaseMessaging
 import dagger.hilt.android.qualifiers.ApplicationContext
