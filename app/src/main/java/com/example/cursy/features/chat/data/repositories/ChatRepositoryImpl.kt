@@ -279,7 +279,7 @@ class ChatRepositoryImpl @Inject constructor(
             val status = if (isTyping) "began" else "ended"
             val messageDto = WsMessageDto(
                 type = "typing",
-                receiver_id = receiverId,
+                receiverId = receiverId,
                 content = status
             )
             val json = gson.toJson(messageDto)
