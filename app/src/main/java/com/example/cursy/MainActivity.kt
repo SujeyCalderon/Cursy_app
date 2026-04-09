@@ -3,6 +3,8 @@ package com.example.cursy
 import android.Manifest
 import android.content.Context
 import android.content.pm.PackageManager
+import android.app.NotificationChannel
+import android.app.NotificationManager
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.compose.setContent
@@ -20,6 +22,7 @@ import com.example.cursy.core.network.CoursyApi
 import com.example.cursy.core.network.FCMTokenRequest
 import com.example.cursy.navigation.AppNavigation
 import com.example.cursy.navigation.Screen
+import com.example.cursy.core.services.ChatForegroundService
 import com.example.cursy.ui.theme.CursyTheme
 import com.google.firebase.messaging.FirebaseMessaging
 import dagger.hilt.android.AndroidEntryPoint
@@ -46,6 +49,7 @@ class MainActivity : FragmentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        createNotificationChannel()
         askNotificationPermission()
 
         val prefs = getSharedPreferences("cursy_prefs", Context.MODE_PRIVATE)
@@ -54,6 +58,11 @@ class MainActivity : FragmentActivity() {
         // Verificar si el usuario ya inició sesión
         val isUserLoggedIn = authManager.getAuthToken() != null
         val startDestination = if (isUserLoggedIn) Screen.Feed.route else Screen.Login.route
+
+        // Iniciar el Foreground Service si el usuario ya está autenticado
+        if (isUserLoggedIn) {
+            ChatForegroundService.start(this)
+        }
 
         // Enviar el token de Firebase al backend para vinculación
         FirebaseMessaging.getInstance().token.addOnCompleteListener { task ->
@@ -106,6 +115,20 @@ class MainActivity : FragmentActivity() {
             } else {
                 requestPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
             }
+        }
+    }
+
+    private fun createNotificationChannel() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val channelId = "cursy_notifications"
+            val channelName = "Cursy Notifications"
+            val channelDescription = "Notificaciones de mensajes y cursos"
+            val importance = NotificationManager.IMPORTANCE_HIGH
+            val channel = NotificationChannel(channelId, channelName, importance).apply {
+                description = channelDescription
+            }
+            val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            notificationManager.createNotificationChannel(channel)
         }
     }
 }

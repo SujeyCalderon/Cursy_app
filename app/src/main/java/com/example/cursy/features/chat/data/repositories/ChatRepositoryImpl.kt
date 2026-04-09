@@ -34,6 +34,15 @@ import okhttp3.WebSocket
 import okhttp3.WebSocketListener
 import retrofit2.HttpException
 import com.example.cursy.core.Hardware.Domain.DeviceNotifier
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.app.PendingIntent
+import android.content.Context
+import android.content.Intent
+import androidx.core.app.NotificationCompat
+import com.example.cursy.MainActivity
+import com.example.cursy.R
+import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 
 class ChatRepositoryImpl @Inject constructor(
@@ -42,11 +51,13 @@ class ChatRepositoryImpl @Inject constructor(
     private val authManager: AuthManager,
     private val chatDao: ChatDao,
     private val notificationDao: NotificationDao,
-    private val deviceNotifier: DeviceNotifier
+    private val deviceNotifier: DeviceNotifier,
+    @ApplicationContext private val context: Context
 ) : ChatRepository {
 
     private val gson = Gson()
     private val _userStatusesFlow = MutableStateFlow<Map<String, Boolean>>(emptyMap())
+    private val _typingStatusesFlow = MutableStateFlow<Map<String, Boolean>>(emptyMap())
     private var webSocket: WebSocket? = null
     private val repositoryScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val conversationReceiverCache = java.util.concurrent.ConcurrentHashMap<String, String>()
@@ -159,6 +170,24 @@ class ChatRepositoryImpl @Inject constructor(
                         return
                     }
 
+                    if (wsMessage.type == "typing") {
+                        val isTyping = wsMessage.content == "began"
+                        wsMessage.senderId?.let { uid ->
+                            _typingStatusesFlow.update { it + (uid to isTyping) }
+                            
+                            // Limpiar después de 3 segundos si es true
+                            if (isTyping) {
+                                repositoryScope.launch {
+                                    delay(3000)
+                                    _typingStatusesFlow.update { prev ->
+                                        if (prev[uid] == true) prev + (uid to false) else prev
+                                    }
+                                }
+                            }
+                        }
+                        return
+                    }
+
                     val resolvedSenderId = wsMessage.senderId
                         ?: if (wsMessage.receiverId != myId) myId else (conversationReceiverCache[wsMessage.conversationId ?: ""] ?: "")
 
@@ -205,6 +234,7 @@ class ChatRepositoryImpl @Inject constructor(
                                 )
                             )
                             deviceNotifier.playNotificationFeedback()
+                            showLocalNotification(senderName, wsMessage.content)
                         }
                     }
 
@@ -235,6 +265,26 @@ class ChatRepositoryImpl @Inject constructor(
 
     override fun observeUserStatuses(): StateFlow<Map<String, Boolean>> {
         return _userStatusesFlow.asStateFlow()
+    }
+
+    override fun observeTypingStatuses(): StateFlow<Map<String, Boolean>> {
+        return _typingStatusesFlow.asStateFlow()
+    }
+
+    override suspend fun sendTypingStatus(receiverId: String, isTyping: Boolean) {
+        val ws = webSocket ?: return
+        try {
+            val status = if (isTyping) "began" else "ended"
+            val messageDto = WsMessageDto(
+                type = "typing",
+                receiver_id = receiverId,
+                content = status
+            )
+            val json = gson.toJson(messageDto)
+            ws.send(json)
+        } catch (e: Exception) {
+            Log.e("ChatWS", "Error enviando estado de escritura", e)
+        }
     }
 
     override suspend fun fetchOnlineUsers() {
@@ -303,5 +353,38 @@ class ChatRepositoryImpl @Inject constructor(
             chatDao.updateMessageStatus(localId, MessageStatus.FAILED.name)
             Result.failure(e)
         }
+    }
+
+    private fun showLocalNotification(title: String, message: String) {
+        val intent = Intent(context, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
+        }
+        val pendingIntent = PendingIntent.getActivity(
+            context, 0, intent,
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+        )
+
+        val channelId = "cursy_notifications"
+        val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+            val channel = NotificationChannel(
+                channelId,
+                "Cursy Notifications",
+                NotificationManager.IMPORTANCE_HIGH
+            )
+            notificationManager.createNotificationChannel(channel)
+        }
+
+        val notification = NotificationCompat.Builder(context, channelId)
+            .setSmallIcon(R.mipmap.ic_launcher)
+            .setContentTitle(title)
+            .setContentText(message)
+            .setAutoCancel(true)
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setContentIntent(pendingIntent)
+            .build()
+
+        notificationManager.notify(System.currentTimeMillis().toInt(), notification)
     }
 }

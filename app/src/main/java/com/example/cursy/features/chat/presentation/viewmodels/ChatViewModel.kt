@@ -30,6 +30,7 @@ data class ChatUiState(
     val currentUserId: String? = null,
     val myProfile: com.example.cursy.features.profile.domain.entities.Profile? = null,
     val userStatuses: Map<String, Boolean> = emptyMap(),
+    val typingStatuses: Map<String, Boolean> = emptyMap(),
     val isLoading: Boolean = false,
     val error: String? = null,
     val messageText: String = "",
@@ -75,6 +76,11 @@ class ChatViewModel @Inject constructor(
         viewModelScope.launch {
             repository.observeUserStatuses().collect { statuses ->
                 _uiState.update { it.copy(userStatuses = statuses) }
+            }
+        }
+        viewModelScope.launch {
+            repository.observeTypingStatuses().collect { typing ->
+                _uiState.update { it.copy(typingStatuses = typing) }
             }
         }
     }
@@ -157,6 +163,16 @@ class ChatViewModel @Inject constructor(
             sendMessageUseCase(conversationId, receiverId, content).onFailure { error ->
                 _uiState.update { it.copy(error = error.message) }
             }
+        }
+    }
+
+    fun sendTypingStatus(isTyping: Boolean) {
+        val receiverId = _uiState.value.currentConversation?.otherUserId
+            ?: _uiState.value.currentMessages.firstOrNull { it.senderId != _uiState.value.currentUserId }?.senderId
+            ?: return
+        
+        viewModelScope.launch {
+            repository.sendTypingStatus(receiverId, isTyping)
         }
     }
 
