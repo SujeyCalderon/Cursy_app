@@ -97,7 +97,14 @@ interface CoursyApi {
         @Path("courseId") courseId: String,
         @Body body: com.example.cursy.features.Review.Data.Remote.Dto.CreateCommentRequest
     ): com.example.cursy.features.Review.Data.Remote.Dto.CreateCommentResponse
+    @POST("auth/fcm-token")
+    suspend fun updateFCMToken(@Body request: FCMTokenRequest): MessageResponse
 }
+
+data class FCMTokenRequest(
+    @SerializedName("fcm_token")
+    val fcmToken: String
+)
 
 data class UsersResponse(
     val users: List<UserResponse>,
@@ -131,6 +138,7 @@ data class RegisterRequest(
 
 data class LoginResponse(
     val message: String,
+    @SerializedName(value = "token", alternate = ["access_token", "accessToken"])
     val token: String,
     val user: UserResponse
 )

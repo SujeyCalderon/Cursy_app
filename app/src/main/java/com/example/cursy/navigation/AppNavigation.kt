@@ -1,6 +1,5 @@
 package com.example.cursy.navigation
 
-import android.util.Log
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -30,9 +29,13 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
+import dagger.hilt.android.EntryPointAccessors
+import com.example.cursy.core.di.AuthSessionEntryPoint
+import kotlinx.coroutines.flow.collectLatest
 import com.example.cursy.features.course.presentation.screens.CourseDetailScreen
 import com.example.cursy.features.course.presentation.screens.CreateCourseScreen
 import com.example.cursy.features.course.presentation.viewmodels.CourseDetailViewModel
@@ -88,6 +91,21 @@ fun AppNavigation(
     var userProfileImage by remember { mutableStateOf("") }
     var hasPublishedCourse by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
+    val context = LocalContext.current
+    val authSessionManager = remember(context) {
+        EntryPointAccessors.fromApplication(
+            context.applicationContext,
+            AuthSessionEntryPoint::class.java
+        ).authSessionManager()
+    }
+
+    LaunchedEffect(navController) {
+        authSessionManager.sessionExpiredEvents.collectLatest {
+            navController.navigate(Screen.Login.route) {
+                popUpTo(0) { inclusive = true }
+            }
+        }
+    }
 
     Scaffold(
         bottomBar = { BottomNavigationBar(navController) }
