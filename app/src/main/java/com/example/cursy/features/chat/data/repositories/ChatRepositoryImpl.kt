@@ -28,12 +28,6 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import okhttp3.OkHttpClient
-import okhttp3.Request
-import okhttp3.Response
-import okhttp3.WebSocket
-import okhttp3.WebSocketListener
-import retrofit2.HttpException
-import com.example.cursy.core.Hardware.Domain.DeviceNotifier
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
@@ -42,8 +36,16 @@ import android.content.Intent
 import androidx.core.app.NotificationCompat
 import com.example.cursy.MainActivity
 import com.example.cursy.R
+import com.example.cursy.core.Hardware.Domain.DeviceNotifier
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
+import javax.inject.Singleton
+import okhttp3.Request
+import okhttp3.Response
+import okhttp3.WebSocket
+import okhttp3.WebSocketListener
+import kotlinx.coroutines.delay
+import retrofit2.HttpException
 
 class ChatRepositoryImpl @Inject constructor(
     private val api: CoursyApi,
