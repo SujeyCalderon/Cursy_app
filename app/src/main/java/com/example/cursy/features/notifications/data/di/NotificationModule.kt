@@ -28,7 +28,8 @@ object NotificationModule {
             context,
             NotificationDatabase::class.java,
             "notification_database"
-        ).build()
+        ).fallbackToDestructiveMigration()
+            .build()
     }
 
     @Provides

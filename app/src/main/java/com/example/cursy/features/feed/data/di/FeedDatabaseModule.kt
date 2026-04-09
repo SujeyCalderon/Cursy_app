@@ -22,7 +22,8 @@ object FeedDatabaseModule {
             context,
             FeedDatabase::class.java,
             "feed_database"
-        ).build()
+        ).fallbackToDestructiveMigration()
+            .build()
     }
 
     @Provides
