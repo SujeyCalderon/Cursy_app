@@ -106,6 +106,7 @@ class ChatViewModel @Inject constructor(
 
     // Carga mensajes del servidor y observa Room como fuente de verdad
     fun loadMessages(conversationId: String) {
+        repository.updateActiveConversation(conversationId)
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, currentConversationId = conversationId) }
 
@@ -174,6 +175,10 @@ class ChatViewModel @Inject constructor(
         viewModelScope.launch {
             repository.sendTypingStatus(receiverId, isTyping)
         }
+    }
+
+    fun clearActiveConversation() {
+        repository.updateActiveConversation(null)
     }
 
     fun searchUsers(query: String? = null) {

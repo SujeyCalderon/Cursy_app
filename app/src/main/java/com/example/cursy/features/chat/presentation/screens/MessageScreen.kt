@@ -43,6 +43,12 @@ fun MessageScreen(
         viewModel.loadMessages(conversationId)
     }
 
+    DisposableEffect(Unit) {
+        onDispose {
+            viewModel.clearActiveConversation()
+        }
+    }
+
     LaunchedEffect(uiState.currentMessages) {
         if (uiState.currentMessages.isNotEmpty()) {
             listState.animateScrollToItem(uiState.currentMessages.size - 1)
