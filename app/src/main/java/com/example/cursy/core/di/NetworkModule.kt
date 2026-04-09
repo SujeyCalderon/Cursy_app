@@ -17,24 +17,49 @@ import javax.inject.Singleton
 @InstallIn(SingletonComponent::class)
 object NetworkModule {
 
+    private fun isAuthEndpoint(encodedPath: String): Boolean =
+        encodedPath.contains("/auth/login") || encodedPath.contains("/auth/register")
+
+    private fun normalizeBearerToken(raw: String?): String? {
+        if (raw.isNullOrBlank()) return null
+        var t = raw.trim()
+        if (t.startsWith("Bearer ", ignoreCase = true)) {
+            t = t.substring(7).trim()
+        }
+        return t.takeIf { it.isNotEmpty() }
+    }
+
     @Provides
     @Singleton
-    fun provideOkHttpClient(authManager: AuthManager): OkHttpClient {
+    fun provideOkHttpClient(
+        authManager: AuthManager,
+        authSessionManager: AuthSessionManager
+    ): OkHttpClient {
         val loggingInterceptor = HttpLoggingInterceptor().apply {
             level = HttpLoggingInterceptor.Level.BODY
         }
 
         val authInterceptor = Interceptor { chain ->
             val originalRequest = chain.request()
+            val path = originalRequest.url.encodedPath
+            val isAuth = isAuthEndpoint(path)
+
             val requestBuilder = originalRequest.newBuilder()
 
-            authManager.getAuthToken()?.let { token ->
-                if (token.isNotEmpty()) {
+            if (!isAuth) {
+                normalizeBearerToken(authManager.getAuthToken())?.let { token ->
                     requestBuilder.addHeader("Authorization", "Bearer $token")
                 }
             }
 
-            chain.proceed(requestBuilder.build())
+            val response = chain.proceed(requestBuilder.build())
+
+            if (response.code == 401 && !isAuth) {
+                authManager.clear()
+                authSessionManager.notifySessionExpired()
+            }
+
+            response
         }
 
         return OkHttpClient.Builder()

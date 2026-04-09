@@ -13,7 +13,10 @@ class AuthManager @Inject constructor(
     private val prefs: SharedPreferences = context.getSharedPreferences("auth_prefs", Context.MODE_PRIVATE)
 
     fun setAuthToken(token: String) {
-        prefs.edit().putString("auth_token", token).apply()
+        val normalized = token.trim().let { t ->
+            if (t.startsWith("Bearer ", ignoreCase = true)) t.substring(7).trim() else t
+        }
+        prefs.edit().putString("auth_token", normalized).apply()
     }
 
     fun getAuthToken(): String? = prefs.getString("auth_token", null)

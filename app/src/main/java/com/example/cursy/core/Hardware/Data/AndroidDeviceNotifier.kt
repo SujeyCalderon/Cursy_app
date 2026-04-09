@@ -18,8 +18,10 @@ class AndroidDeviceNotifier @Inject constructor(
 
         try {
             val notificationUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
-            val ringtone = RingtoneManager.getRingtone(context, notificationUri)
-            ringtone.play()
+            if (notificationUri != null) {
+                val ringtone = RingtoneManager.getRingtone(context, notificationUri)
+                ringtone?.play()
+            }
         } catch (e: Exception) {
             e.printStackTrace()
         }

@@ -29,17 +29,19 @@ class FeedViewModel @Inject constructor(private val getFeedUseCase: GetFeedUseCa
 
             _uiState.update { currentState ->
                 result.fold(
-                    onSuccess = { courses ->
+                    onSuccess = { load ->
                         currentState.copy(
                             isLoading = false,
-                            courses = courses,
-                            error = null
+                            courses = load.courses,
+                            error = null,
+                            showingCachedFeed = load.fromCache
                         )
                     },
                     onFailure = { exception ->
                         currentState.copy(
                             isLoading = false,
-                            error = exception.message ?: "Error al cargar cursos"
+                            error = exception.message ?: "Error al cargar cursos",
+                            showingCachedFeed = false
                         )
                     }
                 )

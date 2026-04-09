@@ -188,6 +188,22 @@ fun FeedScreen(
                         contentPadding = PaddingValues(16.dp),
                         verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
+                        if (uiState.showingCachedFeed) {
+                            item {
+                                Surface(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    shape = MaterialTheme.shapes.small,
+                                    color = MaterialTheme.colorScheme.surfaceVariant
+                                ) {
+                                    Text(
+                                        text = "Sin conexión · mostrando los últimos cursos guardados",
+                                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                            }
+                        }
                         items(uiState.courses) { course ->
                             CourseCard(
                                 course = course,
