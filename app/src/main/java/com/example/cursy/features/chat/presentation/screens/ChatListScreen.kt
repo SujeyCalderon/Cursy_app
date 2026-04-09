@@ -104,7 +104,12 @@ fun ChatListScreen(
                     items(uiState.conversations.filter { 
                         it.otherUserName.contains(uiState.chatSearchQuery, ignoreCase = true) && it.lastMessage.isNotEmpty()
                     }) { conversation ->
-                        ConversationItem(conversation = conversation, onClick = { onChatClick(conversation.id) })
+                        val isOnline = uiState.userStatuses[conversation.otherUserId] ?: false
+                        ConversationItem(
+                            conversation = conversation,
+                            isOnline = isOnline,
+                            onClick = { onChatClick(conversation.id) }
+                        )
                     }
                 }
             }
@@ -113,7 +118,11 @@ fun ChatListScreen(
 }
 
 @Composable
-fun ConversationItem(conversation: Conversation, onClick: () -> Unit) {
+fun ConversationItem(
+    conversation: Conversation,
+    isOnline: Boolean,
+    onClick: () -> Unit
+) {
     val timeFormatter = SimpleDateFormat("hh:mm a", Locale.getDefault())
     
     Row(
@@ -123,26 +132,45 @@ fun ConversationItem(conversation: Conversation, onClick: () -> Unit) {
             .padding(16.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Box(
-            modifier = Modifier
-                .size(60.dp)
-                .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.surfaceVariant),
-            contentAlignment = Alignment.Center
-        ) {
-            AsyncImage(
-                model = conversation.otherUserImage,
-                contentDescription = null,
-                modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.Crop
-            )
-            if (conversation.otherUserImage.isEmpty()) {
-                Text(
-                    text = conversation.otherUserName.take(1).uppercase(),
-                    color = Color.Gray,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 24.sp
+        Box {
+            Box(
+                modifier = Modifier
+                    .size(60.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.surfaceVariant),
+                contentAlignment = Alignment.Center
+            ) {
+                AsyncImage(
+                    model = conversation.otherUserImage,
+                    contentDescription = null,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop
                 )
+                if (conversation.otherUserImage.isEmpty()) {
+                    Text(
+                        text = conversation.otherUserName.take(1).uppercase(),
+                        color = Color.Gray,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 24.sp
+                    )
+                }
+            }
+            
+            // Punto de "En Línea"
+            if (isOnline) {
+                Box(
+                    modifier = Modifier
+                        .size(16.dp)
+                        .align(Alignment.BottomEnd)
+                        .background(Color.White, CircleShape)
+                        .padding(2.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(Color(0xFF00D186), CircleShape)
+                    )
+                }
             }
         }
         

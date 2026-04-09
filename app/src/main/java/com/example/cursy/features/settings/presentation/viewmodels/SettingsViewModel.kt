@@ -5,6 +5,9 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.cursy.core.di.AuthManager
 import com.example.cursy.core.network.CoursyApi
+import com.example.cursy.core.services.ChatForegroundService
+import android.content.Context
+import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -22,7 +25,8 @@ data class SettingsUiState(
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
     private val authManager: AuthManager,
-    private val coursyApi: CoursyApi
+    private val coursyApi: CoursyApi,
+    @ApplicationContext private val context: Context
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(SettingsUiState())
@@ -45,6 +49,7 @@ class SettingsViewModel @Inject constructor(
     }
 
     fun logout() {
+        ChatForegroundService.stop(context)
         authManager.clear()
         _uiState.update { it.copy(navigateToLogin = true) }
     }
@@ -53,6 +58,7 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 coursyApi.deleteAccount()
+                ChatForegroundService.stop(context)
                 authManager.clear()
                 _uiState.update { it.copy(navigateToLogin = true) }
             } catch (e: Exception) {

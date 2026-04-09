@@ -16,6 +16,8 @@ interface ChatRepository {
     fun startSession()
     fun endSession()
     fun observeUserStatuses(): StateFlow<Map<String, Boolean>>
+    fun observeTypingStatuses(): StateFlow<Map<String, Boolean>>
+    suspend fun sendTypingStatus(receiverId: String, isTyping: Boolean)
     suspend fun fetchOnlineUsers()
     suspend fun sendMessage(conversationId: String, receiverId: String, content: String): Result<Unit>
 

@@ -8,10 +8,10 @@ import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.cursy.core.Hardware.Domain.BiometricManager
-import com.example.cursy.core.di.AuthManager
-import com.example.cursy.core.network.*
-import com.example.cursy.features.login.domain.usecases.LoginUseCase
+import com.example.cursy.core.services.ChatForegroundService
 import com.google.firebase.messaging.FirebaseMessaging
+import dagger.hilt.android.qualifiers.ApplicationContext
+import android.content.Context
 import kotlinx.coroutines.tasks.await
 import com.example.cursy.features.profile.domain.entities.Biometric
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -26,7 +26,8 @@ class LoginViewModel @Inject constructor(
     private val loginUseCase: LoginUseCase,
     private val biometricManager: BiometricManager,
     private val authManager: AuthManager,
-    private val api: CoursyApi
+    private val api: CoursyApi,
+    @ApplicationContext private val context: Context
 ) : ViewModel() {
 
     private val _email = MutableStateFlow("")
@@ -88,6 +89,9 @@ class LoginViewModel @Inject constructor(
                     
                     // Sincronizar Token de FCM inmediatamente tras el login
                     syncFCMToken()
+                    
+                    // Iniciar el Foreground Service para chat persistente
+                    ChatForegroundService.start(context)
                     
                     _loginSuccess.value = response
                 },
@@ -167,6 +171,9 @@ class LoginViewModel @Inject constructor(
                         
                         // Sincronizar Token de FCM tras login con huella
                         syncFCMToken()
+
+                        // Iniciar el Foreground Service para chat persistente
+                        ChatForegroundService.start(context)
 
                         _loginSuccess.value = LoginResponse(
                             message = "Login exitoso con huella",

@@ -49,6 +49,12 @@ fun MessageScreen(
         }
     }
 
+    // Emitir estado de escritura
+    val isComposing = uiState.messageText.isNotEmpty()
+    LaunchedEffect(isComposing) {
+        viewModel.sendTypingStatus(isComposing)
+    }
+
     Scaffold(
         topBar = {
             val otherUser = uiState.currentConversation
@@ -70,15 +76,21 @@ fun MessageScreen(
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 18.sp
                             )
+                            val otherUserId = otherUser?.otherUserId ?: ""
+                            val isOnline = uiState.userStatuses[otherUserId] ?: false
+                            val isTyping = uiState.typingStatuses[otherUserId] ?: false
+
                             Text(
-                                text = if (isOnline) "En línea" else "Desconectado",
-                                color = if (isOnline) Color(0xFF00D186) else Color.Gray,
+                                text = if (isTyping) "Escribiendo..." else if (isOnline) "En línea" else "Desconectado",
+                                color = if (isTyping || isOnline) Color(0xFF00D186) else Color.Gray,
                                 fontSize = 12.sp
                             )
                         }
                     }
                 },
                 navigationIcon = {
+                    val otherUserId = otherUser?.otherUserId ?: ""
+                    val isOnline = uiState.userStatuses[otherUserId] ?: false
                     IconButton(onClick = onBackClick) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Regresar")
                     }

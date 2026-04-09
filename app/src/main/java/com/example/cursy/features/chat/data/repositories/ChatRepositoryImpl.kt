@@ -57,6 +57,7 @@ class ChatRepositoryImpl @Inject constructor(
 
     private val gson = Gson()
     private val _userStatusesFlow = MutableStateFlow<Map<String, Boolean>>(emptyMap())
+    private val _typingStatusesFlow = MutableStateFlow<Map<String, Boolean>>(emptyMap())
     private var webSocket: WebSocket? = null
     private val repositoryScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val conversationReceiverCache = java.util.concurrent.ConcurrentHashMap<String, String>()
@@ -169,6 +170,24 @@ class ChatRepositoryImpl @Inject constructor(
                         return
                     }
 
+                    if (wsMessage.type == "typing") {
+                        val isTyping = wsMessage.content == "began"
+                        wsMessage.senderId?.let { uid ->
+                            _typingStatusesFlow.update { it + (uid to isTyping) }
+                            
+                            // Limpiar después de 3 segundos si es true
+                            if (isTyping) {
+                                repositoryScope.launch {
+                                    delay(3000)
+                                    _typingStatusesFlow.update { prev ->
+                                        if (prev[uid] == true) prev + (uid to false) else prev
+                                    }
+                                }
+                            }
+                        }
+                        return
+                    }
+
                     val resolvedSenderId = wsMessage.senderId
                         ?: if (wsMessage.receiverId != myId) myId else (conversationReceiverCache[wsMessage.conversationId ?: ""] ?: "")
 
@@ -246,6 +265,26 @@ class ChatRepositoryImpl @Inject constructor(
 
     override fun observeUserStatuses(): StateFlow<Map<String, Boolean>> {
         return _userStatusesFlow.asStateFlow()
+    }
+
+    override fun observeTypingStatuses(): StateFlow<Map<String, Boolean>> {
+        return _typingStatusesFlow.asStateFlow()
+    }
+
+    override suspend fun sendTypingStatus(receiverId: String, isTyping: Boolean) {
+        val ws = webSocket ?: return
+        try {
+            val status = if (isTyping) "began" else "ended"
+            val messageDto = WsMessageDto(
+                type = "typing",
+                receiver_id = receiverId,
+                content = status
+            )
+            val json = gson.toJson(messageDto)
+            ws.send(json)
+        } catch (e: Exception) {
+            Log.e("ChatWS", "Error enviando estado de escritura", e)
+        }
     }
 
     override suspend fun fetchOnlineUsers() {

@@ -22,6 +22,7 @@ import com.example.cursy.core.network.CoursyApi
 import com.example.cursy.core.network.FCMTokenRequest
 import com.example.cursy.navigation.AppNavigation
 import com.example.cursy.navigation.Screen
+import com.example.cursy.core.services.ChatForegroundService
 import com.example.cursy.ui.theme.CursyTheme
 import com.google.firebase.messaging.FirebaseMessaging
 import dagger.hilt.android.AndroidEntryPoint
@@ -57,6 +58,11 @@ class MainActivity : FragmentActivity() {
         // Verificar si el usuario ya inició sesión
         val isUserLoggedIn = authManager.getAuthToken() != null
         val startDestination = if (isUserLoggedIn) Screen.Feed.route else Screen.Login.route
+
+        // Iniciar el Foreground Service si el usuario ya está autenticado
+        if (isUserLoggedIn) {
+            ChatForegroundService.start(this)
+        }
 
         // Enviar el token de Firebase al backend para vinculación
         FirebaseMessaging.getInstance().token.addOnCompleteListener { task ->
