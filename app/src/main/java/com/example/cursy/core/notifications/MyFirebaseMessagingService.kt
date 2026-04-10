@@ -12,18 +12,61 @@ import com.example.cursy.MainActivity
 import com.example.cursy.R
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
+import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
+import com.example.cursy.features.notifications.data.local.NotificationDao
+import com.example.cursy.features.notifications.data.local.NotificationEntity
 
+@AndroidEntryPoint
 class MyFirebaseMessagingService : FirebaseMessagingService() {
+
+    @Inject
+    lateinit var notificationDao: NotificationDao
+
+    private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     override fun onMessageReceived(remoteMessage: RemoteMessage) {
         super.onMessageReceived(remoteMessage)
         
         Log.d(TAG, "From: ${remoteMessage.from}")
 
-        // Verifica si el mensaje trae una notificación
-        remoteMessage.notification?.let {
-            Log.d(TAG, "Message Notification Body: ${it.body}")
-            sendNotification(it.title ?: "Cursy", it.body ?: "")
+        // Primero, intentamos leer desde el Data Payload (más fiable en background)
+        if (remoteMessage.data.isNotEmpty()) {
+            val title = remoteMessage.data["title"] ?: "Cursy"
+            val body = remoteMessage.data["body"] ?: ""
+            Log.d(TAG, "Message Data Body: $body")
+            
+            handleNotificationDisplayAndSave(title, body)
+        } else {
+            // Fallback: Si por alguna razón viene como Notificación (iOS / Consola Firebase)
+            remoteMessage.notification?.let {
+                Log.d(TAG, "Message Notification Body: ${it.body}")
+                handleNotificationDisplayAndSave(it.title ?: "Cursy", it.body ?: "")
+            }
+        }
+    }
+
+    private fun handleNotificationDisplayAndSave(title: String, messageBody: String) {
+        sendNotification(title, messageBody)
+
+        serviceScope.launch {
+            try {
+                notificationDao.insertNotification(
+                    NotificationEntity(
+                        title = title,
+                        message = messageBody,
+                        timestamp = System.currentTimeMillis(),
+                        isRead = false
+                    )
+                )
+                Log.d(TAG, "Notificación guardada en base de datos local")
+            } catch (e: Exception) {
+                Log.e(TAG, "Error guardando notificación en DB local", e)
+            }
         }
     }
 
