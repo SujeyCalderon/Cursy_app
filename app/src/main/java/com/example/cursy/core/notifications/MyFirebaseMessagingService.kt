@@ -38,20 +38,22 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
         if (remoteMessage.data.isNotEmpty()) {
             val title = remoteMessage.data["title"] ?: "Cursy"
             val body = remoteMessage.data["body"] ?: ""
-            Log.d(TAG, "Message Data Body: $body")
+            val type = remoteMessage.data["type"]
+            val targetId = remoteMessage.data["target_id"]
+            Log.d(TAG, "Message Data Body: $body, Type: $type")
             
-            handleNotificationDisplayAndSave(title, body)
+            handleNotificationDisplayAndSave(title, body, type, targetId)
         } else {
             // Fallback: Si por alguna razón viene como Notificación (iOS / Consola Firebase)
             remoteMessage.notification?.let {
                 Log.d(TAG, "Message Notification Body: ${it.body}")
-                handleNotificationDisplayAndSave(it.title ?: "Cursy", it.body ?: "")
+                handleNotificationDisplayAndSave(it.title ?: "Cursy", it.body ?: "", null, null)
             }
         }
     }
 
-    private fun handleNotificationDisplayAndSave(title: String, messageBody: String) {
-        sendNotification(title, messageBody)
+    private fun handleNotificationDisplayAndSave(title: String, messageBody: String, type: String?, targetId: String?) {
+        sendNotification(title, messageBody, type, targetId)
 
         serviceScope.launch {
             try {
@@ -70,23 +72,41 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
         }
     }
 
+    @Inject
+    lateinit var api: com.example.cursy.core.network.CoursyApi
+
     override fun onNewToken(token: String) {
         super.onNewToken(token)
         Log.d(TAG, "Refreshed token: $token")
-        // Aquí se enviaría el token al servidor del backend si fuera necesario
+        
+        serviceScope.launch {
+            try {
+                api.updateFCMToken(com.example.cursy.core.network.FCMTokenRequest(token))
+                Log.d(TAG, "Token FCM sincronizado con el servidor tras refresco")
+            } catch (e: Exception) {
+                Log.e(TAG, "Error sincronizando token FCM tras refresco", e)
+            }
+        }
     }
 
     private fun sendNotification(title: String, messageBody: String) {
-        val intent = Intent(this, MainActivity::class.java)
-        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
+        sendNotification(title, messageBody, null, null)
+    }
+
+    private fun sendNotification(title: String, messageBody: String, type: String?, targetId: String?) {
+        val intent = Intent(this, MainActivity::class.java).apply {
+            addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
+            putExtra("notification_type", type)
+            putExtra("target_id", targetId)
+        }
         val pendingIntent = PendingIntent.getActivity(
             this, 0, intent,
-            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_ONE_SHOT
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
         )
 
         val channelId = "cursy_notifications"
         val notificationBuilder = NotificationCompat.Builder(this, channelId)
-            .setSmallIcon(R.mipmap.ic_launcher) // Icono de la app
+            .setSmallIcon(R.mipmap.ic_launcher)
             .setContentTitle(title)
             .setContentText(messageBody)
             .setAutoCancel(true)
@@ -95,7 +115,6 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
 
         val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
-        // Canal necesario para Android Oreo (API 26) o superior
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
                 channelId,
@@ -105,7 +124,8 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
             notificationManager.createNotificationChannel(channel)
         }
 
-        notificationManager.notify(0, notificationBuilder.build())
+        val notificationId = System.currentTimeMillis().toInt()
+        notificationManager.notify(notificationId, notificationBuilder.build())
     }
 
     companion object {

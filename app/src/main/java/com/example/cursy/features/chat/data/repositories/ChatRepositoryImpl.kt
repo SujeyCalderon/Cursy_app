@@ -143,6 +143,10 @@ class ChatRepositoryImpl @Inject constructor(
         }
     }
 
+    private val typingJobs = java.util.concurrent.ConcurrentHashMap<String, kotlinx.coroutines.Job>()
+    private var reconnectionDelay = 1000L
+    private val maxReconnectionDelay = 30000L
+
     // Inicia la conexión WebSocket para mensajería en tiempo real
     override fun startSession() {
         if (webSocket != null) return
@@ -158,6 +162,7 @@ class ChatRepositoryImpl @Inject constructor(
         webSocket = client.newWebSocket(request, object : WebSocketListener() {
             override fun onOpen(webSocket: WebSocket, response: Response) {
                 Log.d("ChatWS", "Conexión WebSocket abierta")
+                reconnectionDelay = 1000L // Reset delay on successful connection
             }
 
             override fun onMessage(webSocket: WebSocket, text: String) {
@@ -178,9 +183,10 @@ class ChatRepositoryImpl @Inject constructor(
                         wsMessage.senderId?.let { uid ->
                             _typingStatusesFlow.update { it + (uid to isTyping) }
                             
-                            // Limpiar después de 3 segundos si es true
+                            // Limpiar después de 3 segundos si es true, cancelando trabajos previos
                             if (isTyping) {
-                                repositoryScope.launch {
+                                typingJobs[uid]?.cancel()
+                                typingJobs[uid] = repositoryScope.launch {
                                     delay(3000)
                                     _typingStatusesFlow.update { prev ->
                                         if (prev[uid] == true) prev + (uid to false) else prev
@@ -256,13 +262,25 @@ class ChatRepositoryImpl @Inject constructor(
 
             override fun onClosed(webSocket: WebSocket, code: Int, reason: String) {
                 this@ChatRepositoryImpl.webSocket = null
+                attemptReconnection()
             }
 
             override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
                 Log.e("ChatWS", "Error en WebSocket: ${t.message}", t)
                 this@ChatRepositoryImpl.webSocket = null
+                attemptReconnection()
             }
         })
+    }
+
+    private fun attemptReconnection() {
+        repositoryScope.launch {
+            Log.d("ChatWS", "Intentando reconexión en ${reconnectionDelay}ms...")
+            delay(reconnectionDelay)
+            startSession()
+            // Exponential backoff
+            reconnectionDelay = (reconnectionDelay * 2).coerceAtMost(maxReconnectionDelay)
+        }
     }
 
     override fun endSession() {

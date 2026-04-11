@@ -62,7 +62,6 @@ class ChatViewModel @Inject constructor(
     init {
         loadConversations()
         loadMyProfile()
-        repository.startSession()
         observeGlobalStatuses()
         // Respaldo REST para obtener estado en línea (el snapshot WebSocket puede perderse)
         viewModelScope.launch {
