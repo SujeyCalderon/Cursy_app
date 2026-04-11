@@ -57,7 +57,21 @@ class MainActivity : FragmentActivity() {
 
         // Verificar si el usuario ya inició sesión
         val isUserLoggedIn = authManager.getAuthToken() != null
-        val startDestination = if (isUserLoggedIn) Screen.Feed.route else Screen.Login.route
+        
+        // Manejo de navegación desde notificaciones
+        val notificationType = intent.getStringExtra("notification_type")
+        val targetId = intent.getStringExtra("target_id")
+        
+        val startDestination = if (isUserLoggedIn) {
+            when (notificationType) {
+                "new_course", "new_comment" -> {
+                    if (targetId != null) Screen.CourseDetail.createRoute(targetId) else Screen.Feed.route
+                }
+                else -> Screen.Feed.route
+            }
+        } else {
+            Screen.Login.route
+        }
 
         // Iniciar el Foreground Service si el usuario ya está autenticado
         if (isUserLoggedIn) {
