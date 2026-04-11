@@ -27,7 +27,10 @@ import com.example.cursy.ui.theme.CursyTheme
 import com.google.firebase.messaging.FirebaseMessaging
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
+import androidx.work.*
+import com.example.cursy.features.feed.data.worker.SyncWorker
 import javax.inject.Inject
+import java.util.concurrent.TimeUnit
 
 @AndroidEntryPoint
 class MainActivity : FragmentActivity() {
@@ -51,6 +54,7 @@ class MainActivity : FragmentActivity() {
         enableEdgeToEdge()
         createNotificationChannel()
         askNotificationPermission()
+        scheduleSync()
 
         val prefs = getSharedPreferences("cursy_prefs", Context.MODE_PRIVATE)
         val savedDarkMode = prefs.getBoolean("dark_mode", false)
@@ -150,5 +154,21 @@ class MainActivity : FragmentActivity() {
             val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
             notificationManager.createNotificationChannel(channel)
         }
+    }
+
+    private fun scheduleSync() {
+        val constraints = Constraints.Builder()
+            .setRequiredNetworkType(NetworkType.CONNECTED)
+            .build()
+
+        val syncRequest = PeriodicWorkRequestBuilder<SyncWorker>(1, TimeUnit.HOURS)
+            .setConstraints(constraints)
+            .build()
+
+        WorkManager.getInstance(this).enqueueUniquePeriodicWork(
+            "FeedSyncWorker",
+            ExistingPeriodicWorkPolicy.KEEP,
+            syncRequest
+        )
     }
 }

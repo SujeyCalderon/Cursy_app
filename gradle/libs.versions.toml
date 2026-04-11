@@ -10,8 +10,10 @@ activityCompose = "1.8.2"
 composeBom = "2024.02.00"
 googleServices = "4.4.1"
 firebaseBom = "32.8.0"
+workManager = "2.9.0"
 
 [libraries]
+androidx-work-runtime-ktx = { group = "androidx.work", name = "work-runtime-ktx", version.ref = "workManager" }
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 androidx-junit = { group = "androidx.test.ext", name = "junit", version.ref = "junitVersion" }

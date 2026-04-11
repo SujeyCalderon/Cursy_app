@@ -7,5 +7,6 @@ data class FeedUiState(
     val courses: List<Course> = emptyList(),
     val error: String? = null,
     val showingCachedFeed: Boolean = false,
-    val showPublishFirstDialog: Boolean = false
+    val showPublishFirstDialog: Boolean = false,
+    val newPostsCount: Int = 0
 )
