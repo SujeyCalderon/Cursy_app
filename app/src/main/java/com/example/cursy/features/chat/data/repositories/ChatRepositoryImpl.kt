@@ -62,6 +62,8 @@ class ChatRepositoryImpl @Inject constructor(
     private val _typingStatusesFlow = MutableStateFlow<Map<String, Boolean>>(emptyMap())
     private var webSocket: WebSocket? = null
     private val repositoryScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private val _globalEvents = kotlinx.coroutines.flow.MutableSharedFlow<String>(replay = 0)
+    override val globalEvents: Flow<String> = _globalEvents
     private val conversationReceiverCache = java.util.concurrent.ConcurrentHashMap<String, String>()
     private var activeConversationId: String? = null
 
@@ -174,6 +176,13 @@ class ChatRepositoryImpl @Inject constructor(
                         val isOnline = wsMessage.content == "online"
                         wsMessage.senderId?.let { uid ->
                             _userStatusesFlow.update { it + (uid to isOnline) }
+                        }
+                        return
+                    }
+
+                    if (wsMessage.type == "new_course" || wsMessage.type == "new_comment") {
+                        repositoryScope.launch {
+                            _globalEvents.emit(wsMessage.type ?: "")
                         }
                         return
                     }
