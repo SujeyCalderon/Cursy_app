@@ -85,7 +85,8 @@ sealed class BottomNavItem(
 fun AppNavigation(
     startDestination: String = Screen.Login.route,
     isDarkMode: Boolean = false,
-    onToggleDarkMode: (Boolean) -> Unit = {}
+    onToggleDarkMode: (Boolean) -> Unit = {},
+    onLoginSuccess: () -> Unit = {}
 ) {
     val navController = rememberNavController()
     var userProfileImage by remember { mutableStateOf("") }
@@ -122,6 +123,7 @@ fun AppNavigation(
                     onLoginSuccess = { token, userId ->
                         authViewModel.setAuthToken(token)
                         authViewModel.setCurrentUserId(userId)
+                        onLoginSuccess() // Sincronizar FCM token
                         navController.navigate(Screen.Feed.route) {
                             popUpTo(Screen.Login.route) { inclusive = true }
                         }
