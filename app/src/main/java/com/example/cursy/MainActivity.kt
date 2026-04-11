@@ -155,4 +155,20 @@ class MainActivity : FragmentActivity() {
             notificationManager.createNotificationChannel(channel)
         }
     }
+
+    private fun scheduleSync() {
+        val constraints = Constraints.Builder()
+            .setRequiredNetworkType(NetworkType.CONNECTED)
+            .build()
+
+        val syncRequest = PeriodicWorkRequestBuilder<SyncWorker>(1, TimeUnit.HOURS)
+            .setConstraints(constraints)
+            .build()
+
+        WorkManager.getInstance(this).enqueueUniquePeriodicWork(
+            "FeedSyncWorker",
+            ExistingPeriodicWorkPolicy.KEEP,
+            syncRequest
+        )
+    }
 }
