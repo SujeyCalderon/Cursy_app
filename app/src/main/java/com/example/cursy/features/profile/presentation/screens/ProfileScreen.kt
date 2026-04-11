@@ -11,6 +11,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.School
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
@@ -41,7 +42,9 @@ fun ProfileScreen(
     viewModel: ProfileViewModel,
     onCourseClick: (String, Boolean) -> Unit,
     onSettingsClick: () -> Unit = {},
-    onEditProfileClick: () -> Unit = {}
+    onEditProfileClick: () -> Unit = {},
+    // david: Nueva acción para navegar a descargas
+    onDownloadsClick: () -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
@@ -56,6 +59,14 @@ fun ProfileScreen(
                     )
                 },
                 actions = {
+                    // david: Botón de descargas en el perfil
+                    IconButton(onClick = onDownloadsClick) {
+                        Icon(
+                            Icons.Default.Download,
+                            contentDescription = "Descargas",
+                            tint = GreenPrimary
+                        )
+                    }
                     IconButton(onClick = onSettingsClick) {
                         Icon(
                             Icons.Default.Settings,

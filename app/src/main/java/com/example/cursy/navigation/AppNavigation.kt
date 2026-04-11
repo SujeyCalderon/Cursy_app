@@ -59,6 +59,8 @@ import com.example.cursy.features.chat.presentation.screens.MessageScreen
 import com.example.cursy.features.chat.presentation.screens.UserSearchScreen
 import com.example.cursy.features.chat.presentation.viewmodels.ChatViewModel
 import com.example.cursy.features.profile.presentation.screens.EditProfileScreen
+import com.example.cursy.features.feed.presentation.screens.DownloadScreen
+import com.example.cursy.features.feed.presentation.viewmodels.DownloadViewModel
 import kotlinx.coroutines.launch
 
 private val GreenPrimary = Color(0xFF2ECC71)
@@ -201,8 +203,6 @@ fun AppNavigation(
                     viewModel = exploreViewModel,
                     onMessageClick = { userId ->
                         chatViewModel.createConversation(userId)
-                        // La navegación ocurre en el LaunchedEffect de arriba
-                        // cuando navigationEvent emite el conversationId
                     }
                 )
             }
@@ -269,6 +269,18 @@ fun AppNavigation(
                     },
                     onSettingsClick    = { navController.navigate(Screen.Settings.route) },
                     onEditProfileClick = { navController.navigate(Screen.EditProfile.route) }
+                )
+            }
+
+            // david: Pantalla de mis descargas (offline)
+            composable(Screen.Downloads.route) {
+                val viewModel: DownloadViewModel = hiltViewModel()
+                DownloadScreen(
+                    viewModel = viewModel,
+                    onNavigateBack = { navController.popBackStack() },
+                    onPlayOffline = { localPath ->
+                        // david: Navegar a un reproductor o manejar la reproducción local
+                    }
                 )
             }
 

@@ -22,4 +22,6 @@ sealed class Screen(val route: String) {
     object CourseDetail : Screen("course/{courseId}") {
         fun createRoute(courseId: String) = "course/$courseId"
     }
+    // david: Nueva ruta para la pantalla de descargas
+    object Downloads : Screen("downloads")
 }

@@ -62,6 +62,13 @@
             android:enabled="true"
             android:exported="false"
             android:foregroundServiceType="dataSync" />
+
+        <!-- david: Registro del servicio de descarga -->
+        <service
+            android:name=".features.feed.data.local.DownloadService"
+            android:enabled="true"
+            android:exported="false"
+            android:foregroundServiceType="dataSync" />
     </application>
 
 </manifest>

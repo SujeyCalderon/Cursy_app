@@ -1,5 +1,8 @@
 package com.example.cursy.features.course.presentation.viewmodels
 
+import android.content.Context
+import android.content.Intent
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.cursy.features.course.domain.usecases.DeleteCourseUseCase
@@ -8,7 +11,12 @@ import com.example.cursy.features.course.domain.usecases.SaveCourseUseCase
 import com.example.cursy.features.notifications.domain.models.Notification
 import com.example.cursy.features.notifications.domain.usecases.InsertNotificationUseCase
 import com.example.cursy.features.course.presentation.CourseDetailUiState
+import com.example.cursy.features.feed.data.local.DownloadService
+import com.example.cursy.features.feed.data.local.DownloadStatus
+import com.example.cursy.features.feed.data.repositories.DownloadRepository
+import com.example.cursy.features.course.domain.entities.ContentBlockType
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
@@ -20,7 +28,10 @@ class CourseDetailViewModel @Inject constructor(
     private val getCourseDetailUseCase: GetCourseDetailUseCase,
     private val deleteCourseUseCase: DeleteCourseUseCase,
     private val saveCourseUseCase: SaveCourseUseCase,
-    private val insertNotificationUseCase: InsertNotificationUseCase
+    private val insertNotificationUseCase: InsertNotificationUseCase,
+    // david: Inyectando el repositorio de descargas
+    private val downloadRepository: DownloadRepository,
+    @ApplicationContext private val context: Context
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(CourseDetailUiState())
@@ -32,9 +43,9 @@ class CourseDetailViewModel @Inject constructor(
 
             val result = getCourseDetailUseCase(courseId)
 
-            _uiState.update { currentState ->
-                result.fold(
-                    onSuccess = { (course, isOwner, isSaved) ->
+            result.fold(
+                onSuccess = { (course, isOwner, isSaved) ->
+                    _uiState.update { currentState ->
                         currentState.copy(
                             isLoading = false,
                             course = course,
@@ -42,15 +53,64 @@ class CourseDetailViewModel @Inject constructor(
                             isSaved = isSaved,
                             error = null
                         )
-                    },
-                    onFailure = { exception ->
-                        currentState.copy(
-                            isLoading = false,
-                            error = exception.message ?: "Error al cargar curso"
-                        )
                     }
-                )
+                    // david: Observar el estado de la descarga local para este curso
+                    observeDownloadStatus(courseId)
+                },
+                onFailure = { exception ->
+                    _uiState.update { it.copy(
+                        isLoading = false,
+                        error = exception.message ?: "Error al cargar curso"
+                    ) }
+                }
+            )
+        }
+    }
+
+    // david: Función para observar cambios en el estado de la descarga desde Room
+    private fun observeDownloadStatus(courseId: String) {
+        viewModelScope.launch {
+            downloadRepository.allDownloads.collect { downloads ->
+                val myDownload = downloads.find { it.courseId == courseId }
+                if (myDownload != null) {
+                    _uiState.update { it.copy(
+                        downloadStatus = myDownload.status,
+                        downloadProgress = myDownload.progress
+                    ) }
+                }
             }
+        }
+    }
+
+    // david: Lógica para iniciar el servicio de descarga usando ContextCompat para compatibilidad
+    fun startCourseDownload() {
+        val course = uiState.value.course ?: return
+        val videoBlock = course.blocks.find { it.type == ContentBlockType.VIDEO } ?: return
+
+        viewModelScope.launch {
+            downloadRepository.startDownload(
+                courseId = course.id,
+                title = course.title,
+                url = videoBlock.content
+            )
+
+            val intent = Intent(context, DownloadService::class.java).apply {
+                putExtra("courseId", course.id)
+                putExtra("title", course.title)
+                putExtra("url", videoBlock.content)
+            }
+            ContextCompat.startForegroundService(context, intent)
+        }
+    }
+
+    // david: Eliminar descarga local
+    fun deleteDownload(courseId: String) {
+        viewModelScope.launch {
+            downloadRepository.deleteDownload(courseId)
+            _uiState.update { it.copy(
+                downloadStatus = DownloadStatus.PENDING,
+                downloadProgress = 0
+            ) }
         }
     }
 
