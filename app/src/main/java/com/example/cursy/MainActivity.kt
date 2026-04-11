@@ -79,23 +79,8 @@ class MainActivity : FragmentActivity() {
         }
 
         // Enviar el token de Firebase al backend para vinculación
-        FirebaseMessaging.getInstance().token.addOnCompleteListener { task ->
-            if (task.isSuccessful) {
-                val token = task.result
-                android.util.Log.d("FCM_TOKEN", "Token obtenido: $token")
-                
-                // Solo enviar si el usuario está logueado
-                if (isUserLoggedIn) {
-                    lifecycleScope.launch {
-                        try {
-                            api.updateFCMToken(FCMTokenRequest(token))
-                            android.util.Log.d("FCM_TOKEN", "Token sincronizado con el servidor")
-                        } catch (e: Exception) {
-                            android.util.Log.e("FCM_TOKEN", "Error al sincronizar token: ${e.message}")
-                        }
-                    }
-                }
-            }
+        if (isUserLoggedIn) {
+            syncFCMToken()
         }
 
         setContent {
@@ -114,8 +99,29 @@ class MainActivity : FragmentActivity() {
                     AppNavigation(
                         startDestination = startDestination,
                         isDarkMode = isDarkMode,
-                        onToggleDarkMode = onToggleDarkMode
+                        onToggleDarkMode = onToggleDarkMode,
+                        onLoginSuccess = {
+                            syncFCMToken()
+                        }
                     )
+                }
+            }
+        }
+    }
+
+    private fun syncFCMToken() {
+        FirebaseMessaging.getInstance().token.addOnCompleteListener { task ->
+            if (task.isSuccessful) {
+                val token = task.result
+                android.util.Log.d("FCM_TOKEN", "Token obtenido: $token")
+                
+                lifecycleScope.launch {
+                    try {
+                        api.updateFCMToken(FCMTokenRequest(token))
+                        android.util.Log.d("FCM_TOKEN", "Token sincronizado con el servidor")
+                    } catch (e: Exception) {
+                        android.util.Log.e("FCM_TOKEN", "Error al sincronizar token: ${e.message}")
+                    }
                 }
             }
         }
