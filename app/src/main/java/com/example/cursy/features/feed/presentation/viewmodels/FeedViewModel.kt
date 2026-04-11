@@ -11,14 +11,36 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+import com.example.cursy.features.chat.domain.repositories.ChatRepository
+import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
+import javax.inject.Inject
+
 @HiltViewModel
-class FeedViewModel @Inject constructor(private val getFeedUseCase: GetFeedUseCase) : ViewModel() {
+class FeedViewModel @Inject constructor(
+    private val getFeedUseCase: GetFeedUseCase,
+    private val chatRepository: ChatRepository
+) : ViewModel() {
 
     private val _uiState = MutableStateFlow(FeedUiState())
     val uiState = _uiState.asStateFlow()
 
     init {
         loadFeed()
+        observeGlobalEvents()
+    }
+
+    private fun observeGlobalEvents() {
+        viewModelScope.launch {
+            chatRepository.globalEvents.collect { event ->
+                if (event == "new_course") {
+                    loadFeed()
+                }
+            }
+        }
     }
 
     fun loadFeed() {
