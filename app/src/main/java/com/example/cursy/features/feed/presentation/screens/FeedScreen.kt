@@ -188,6 +188,29 @@ fun FeedScreen(
                         contentPadding = PaddingValues(16.dp),
                         verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
+                        if (uiState.newPostsCount > 0) {
+                            item {
+                                Surface(
+                                    onClick = { viewModel.clearNewPostsAlert() },
+                                    modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
+                                    shape = MaterialTheme.shapes.medium,
+                                    color = GreenPrimary.copy(alpha = 0.9f),
+                                    contentColor = Color.White
+                                ) {
+                                    Row(
+                                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.Center
+                                    ) {
+                                        Text(
+                                            text = "✨ ${uiState.newPostsCount} nuevas publicaciones",
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                    }
+                                }
+                            }
+                        }
                         if (uiState.showingCachedFeed) {
                             item {
                                 Surface(
