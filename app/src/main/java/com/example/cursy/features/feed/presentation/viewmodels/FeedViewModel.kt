@@ -12,12 +12,6 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 import com.example.cursy.features.chat.domain.repositories.ChatRepository
-import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.launch
-import javax.inject.Inject
 
 @HiltViewModel
 class FeedViewModel @Inject constructor(
