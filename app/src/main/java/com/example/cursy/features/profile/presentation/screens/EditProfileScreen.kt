@@ -17,8 +17,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.CameraAlt
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Fingerprint
 import androidx.compose.material.icons.filled.Photo
+import androidx.compose.material.icons.filled.CloudUpload
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -69,6 +71,7 @@ fun EditProfileScreen(
     val saveSuccess     by viewModel.saveSuccess.collectAsStateWithLifecycle()
     val huellaEnabled   by viewModel.huellaEnabled.collectAsStateWithLifecycle()
     val huellaMessage   by viewModel.huellaMessage.collectAsStateWithLifecycle()
+    val uploadState     by viewModel.uploadState.collectAsStateWithLifecycle() // NUEVO
 
     val context = LocalContext.current
     val activity = remember(context) { context.findActivity() }
@@ -77,6 +80,19 @@ fun EditProfileScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     var showSheet by remember { mutableStateOf(false) }
     var cameraImageUri by remember { mutableStateOf<Uri?>(null) }
+
+    // NUEVO: Mostrar mensajes de estado de subida
+    LaunchedEffect(uploadState) {
+        when (val state = uploadState) {
+            is EditProfileViewModel.UploadState.Success -> {
+                snackbarHostState.showSnackbar("¡Foto actualizada correctamente!")
+            }
+            is EditProfileViewModel.UploadState.Error -> {
+                snackbarHostState.showSnackbar(state.message)
+            }
+            else -> {}
+        }
+    }
 
     LaunchedEffect(saveSuccess) {
         if (saveSuccess) {
@@ -92,26 +108,26 @@ fun EditProfileScreen(
         }
     }
 
-    fun processAndUpload(uri: Uri) {
+    fun processSelectedImage(uri: Uri) {
         val inputStream = context.contentResolver.openInputStream(uri)
-        val tempFile = File.createTempFile("profile_", ".jpg", context.cacheDir)
+        val tempFile = File(context.cacheDir, "profile_upload_${System.currentTimeMillis()}.jpg")
         inputStream?.use { input ->
             tempFile.outputStream().use { output -> input.copyTo(output) }
         }
-        viewModel.uploadImage(tempFile)
+        viewModel.onImageSelected(tempFile)
     }
 
     val galleryLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
-        uri?.let { processAndUpload(it) }
+        uri?.let { processSelectedImage(it) }
     }
 
     val cameraLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.TakePicture()
     ) { success ->
         if (success) {
-            cameraImageUri?.let { processAndUpload(it) }
+            cameraImageUri?.let { processSelectedImage(it) }
         }
     }
 
@@ -119,7 +135,7 @@ fun EditProfileScreen(
         contract = ActivityResultContracts.RequestPermission()
     ) { granted ->
         if (granted) {
-            val photoFile = File.createTempFile("photo_", ".jpg", context.cacheDir)
+            val photoFile = File(context.cacheDir, "camera_photo_${System.currentTimeMillis()}.jpg")
             val uri = FileProvider.getUriForFile(context, "${context.packageName}.provider", photoFile)
             cameraImageUri = uri
             cameraLauncher.launch(uri)
@@ -129,7 +145,7 @@ fun EditProfileScreen(
     fun launchCamera() {
         val permission = Manifest.permission.CAMERA
         if (ContextCompat.checkSelfPermission(context, permission) == PackageManager.PERMISSION_GRANTED) {
-            val photoFile = File.createTempFile("photo_", ".jpg", context.cacheDir)
+            val photoFile = File(context.cacheDir, "camera_photo_${System.currentTimeMillis()}.jpg")
             val uri = FileProvider.getUriForFile(context, "${context.packageName}.provider", photoFile)
             cameraImageUri = uri
             cameraLauncher.launch(uri)
@@ -221,7 +237,7 @@ fun EditProfileScreen(
             Box(
                 modifier = Modifier
                     .size(120.dp)
-                    .clickable { showSheet = true }
+                    .clickable { if (!isUploading) showSheet = true }
             ) {
                 AsyncImage(
                     model = profileImageUrl.ifEmpty {
@@ -235,24 +251,76 @@ fun EditProfileScreen(
                     contentScale = ContentScale.Crop
                 )
 
+                // NUEVO: Indicador de estado mejorado
                 Box(
                     modifier = Modifier
                         .align(Alignment.BottomEnd)
                         .size(36.dp)
-                        .background(GreenPrimary, CircleShape)
+                        .background(
+                            when (uploadState) {
+                                is EditProfileViewModel.UploadState.Success -> Color(0xFF4CAF50)
+                                is EditProfileViewModel.UploadState.Error -> Color(0xFFE53935)
+                                else -> GreenPrimary
+                            },
+                            CircleShape
+                        )
                         .border(2.dp, MaterialTheme.colorScheme.surface, CircleShape),
                     contentAlignment = Alignment.Center
                 ) {
-                    if (isUploading) {
-                        CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp, color = Color.White)
-                    } else {
-                        Icon(Icons.Default.CameraAlt, contentDescription = "Cambiar foto", tint = Color.White, modifier = Modifier.size(18.dp))
+                    when {
+                        isUploading -> {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(20.dp),
+                                strokeWidth = 2.dp,
+                                color = Color.White
+                            )
+                        }
+                        uploadState is EditProfileViewModel.UploadState.Success -> {
+                            Icon(
+                                Icons.Default.CheckCircle,
+                                contentDescription = "Subida completada",
+                                tint = Color.White,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+                        uploadState is EditProfileViewModel.UploadState.Error -> {
+                            Icon(
+                                Icons.Default.CloudUpload,
+                                contentDescription = "Error de subida",
+                                tint = Color.White,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
+                        else -> {
+                            Icon(
+                                Icons.Default.CameraAlt,
+                                contentDescription = "Cambiar foto",
+                                tint = Color.White,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
                     }
                 }
             }
 
             Spacer(modifier = Modifier.height(8.dp))
-            Text(text = "Toca para cambiar la foto", fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+
+            // NUEVO: Texto de estado debajo de la foto
+            Text(
+                text = when (uploadState) {
+                    is EditProfileViewModel.UploadState.Uploading -> "Subiendo foto..."
+                    is EditProfileViewModel.UploadState.Success -> "¡Foto actualizada!"
+                    is EditProfileViewModel.UploadState.Error -> "Error al subir. Reintentando..."
+                    else -> "Toca para cambiar la foto"
+                },
+                fontSize = 13.sp,
+                color = when (uploadState) {
+                    is EditProfileViewModel.UploadState.Success -> Color(0xFF4CAF50)
+                    is EditProfileViewModel.UploadState.Error -> Color(0xFFE53935)
+                    else -> MaterialTheme.colorScheme.onSurfaceVariant
+                }
+            )
+
             Spacer(modifier = Modifier.height(32.dp))
 
             OutlinedTextField(
@@ -262,7 +330,8 @@ fun EditProfileScreen(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
                 colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = GreenPrimary, focusedLabelColor = GreenPrimary),
-                singleLine = true
+                singleLine = true,
+                enabled = !isUploading // NUEVO: Deshabilitar durante subida
             )
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -274,7 +343,8 @@ fun EditProfileScreen(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
                 colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = GreenPrimary, focusedLabelColor = GreenPrimary),
-                singleLine = true
+                singleLine = true,
+                enabled = !isUploading
             )
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -288,12 +358,12 @@ fun EditProfileScreen(
                     .height(120.dp),
                 shape = RoundedCornerShape(12.dp),
                 colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = GreenPrimary, focusedLabelColor = GreenPrimary),
-                maxLines = 4
+                maxLines = 4,
+                enabled = !isUploading
             )
 
             Spacer(modifier = Modifier.weight(1f))
 
-            // ── Botón Huella ──────────────────────────────────────────────
             if (viewModel.isBiometricAvailable) {
                 OutlinedButton(
                     onClick = {
@@ -306,7 +376,8 @@ fun EditProfileScreen(
                         .fillMaxWidth()
                         .height(50.dp),
                     shape = RoundedCornerShape(12.dp),
-                    border = BorderStroke(1.dp, if (huellaEnabled) Color.Red else GreenPrimary)
+                    border = BorderStroke(1.dp, if (huellaEnabled) Color.Red else GreenPrimary),
+                    enabled = !isUploading
                 ) {
                     Icon(
                         Icons.Default.Fingerprint,
@@ -323,7 +394,6 @@ fun EditProfileScreen(
                 Spacer(modifier = Modifier.height(12.dp))
             }
 
-            // ── Botón Guardar ─────────────────────────────────────────────
             Button(
                 onClick = { viewModel.saveProfile(initialProfileImage) },
                 modifier = Modifier
@@ -333,7 +403,7 @@ fun EditProfileScreen(
                 colors = ButtonDefaults.buttonColors(containerColor = GreenPrimary),
                 enabled = !isLoading && !isUploading
             ) {
-                if (isLoading) {
+                if (isLoading || isUploading) {
                     CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.dp, color = Color.White)
                 } else {
                     Text("Guardar Cambios", fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
