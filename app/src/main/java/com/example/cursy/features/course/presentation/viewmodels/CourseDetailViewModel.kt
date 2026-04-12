@@ -72,12 +72,10 @@ class CourseDetailViewModel @Inject constructor(
         viewModelScope.launch {
             downloadRepository.allDownloads.collect { downloads ->
                 val myDownload = downloads.find { it.courseId == courseId }
-                if (myDownload != null) {
-                    _uiState.update { it.copy(
-                        downloadStatus = myDownload.status,
-                        downloadProgress = myDownload.progress
-                    ) }
-                }
+                _uiState.update { it.copy(
+                    downloadStatus = myDownload?.status ?: DownloadStatus.PENDING,
+                    downloadProgress = myDownload?.progress ?: 0
+                ) }
             }
         }
     }
