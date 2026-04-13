@@ -37,7 +37,6 @@
             android:authorities="${applicationId}.androidx-startup"
             android:exported="false"
             tools:node="merge">
-            <!-- Esto deshabilita el inicializador por defecto de WorkManager -->
             <meta-data
                 android:name="androidx.work.WorkManagerInitializer"
                 android:value="androidx.startup"
@@ -92,6 +91,12 @@
             android:enabled="true"
             android:exported="false"
             android:foregroundServiceType="dataSync" />
+
+        <!-- david: Registro del servicio de video persistente -->
+        <service
+            android:name=".core.services.PersistentVideoService"
+            android:enabled="true"
+            android:exported="false" />
 
     </application>
 

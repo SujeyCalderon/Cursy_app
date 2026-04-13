@@ -1,6 +1,5 @@
 package com.example.cursy.features.course.presentation.screens
 
-import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -21,8 +20,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.media3.ui.PlayerView
 import coil.compose.AsyncImage
-import com.example.cursy.components.PublishFirstDialog
+import com.example.cursy.LocalDetailScreenState
+import com.example.cursy.LocalVideoService
 import com.example.cursy.features.Review.Presentation.Screen.EmbeddedReviews
 import com.example.cursy.features.course.domain.entities.ContentBlock
 import com.example.cursy.features.course.domain.entities.ContentBlockType
@@ -38,10 +39,19 @@ fun CourseDetailScreen(
     viewModel: CourseDetailViewModel,
     onNavigateBack: () -> Unit,
     onEditCourse: () -> Unit = {},
-    onCreateCourse: () -> Unit = {},
-    hasPublishedCourse: Boolean = false
+    @Suppress("UNUSED_PARAMETER") onCreateCourse: () -> Unit = {},
+    @Suppress("UNUSED_PARAMETER") hasPublishedCourse: Boolean = false
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val setDetailScreenState = LocalDetailScreenState.current
+
+    // Notificar al MainActivity que estamos en la pantalla de detalle
+    DisposableEffect(Unit) {
+        setDetailScreenState(true)
+        onDispose {
+            setDetailScreenState(false)
+        }
+    }
 
     LaunchedEffect(courseId) {
         viewModel.loadCourse(courseId)
@@ -128,7 +138,6 @@ fun CourseDetailScreen(
                 }
 
                 uiState.error != null -> {
-                    // ... (manejo de errores igual)
                     Column(
                         modifier = Modifier
                             .fillMaxSize()
@@ -165,7 +174,6 @@ fun CourseDetailScreen(
                                 
                                 Spacer(modifier = Modifier.height(16.dp))
 
-                                // david: Fila de acciones que incluye el nuevo botón de descarga
                                 Row(
                                     modifier = Modifier.fillMaxWidth(),
                                     verticalAlignment = Alignment.CenterVertically,
@@ -181,13 +189,13 @@ fun CourseDetailScreen(
                                 }
 
                                 Spacer(modifier = Modifier.height(16.dp))
-                                Divider()
+                                HorizontalDivider()
                                 Spacer(modifier = Modifier.height(16.dp))
                                 Text(text = "DESCRIPCIÓN", fontSize = 18.sp, fontWeight = FontWeight.Medium)
                                 Spacer(modifier = Modifier.height(8.dp))
                                 Text(text = uiState.course!!.description, fontSize = 16.sp, lineHeight = 24.sp)
                                 Spacer(modifier = Modifier.height(16.dp))
-                                Divider()
+                                HorizontalDivider()
                                 Spacer(modifier = Modifier.height(16.dp))
                                 Text(text = "CONTENIDO DEL CURSO", fontSize = 18.sp, fontWeight = FontWeight.Medium)
                                 Spacer(modifier = Modifier.height(16.dp))
@@ -216,7 +224,6 @@ fun CourseDetailScreen(
     }
 }
 
-// david: Componente reutilizable para el botón de descarga con estados
 @Composable
 fun DownloadButton(
     status: DownloadStatus,
@@ -241,7 +248,7 @@ fun DownloadButton(
         DownloadStatus.DOWNLOADING -> {
             Column(modifier = modifier) {
                 LinearProgressIndicator(
-                    progress = progress / 100f,
+                    progress = { progress / 100f },
                     modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(4.dp)),
                     color = GreenPrimary
                 )
@@ -318,29 +325,41 @@ fun ContentBlockItem(block: ContentBlock) {
 
 @Composable
 fun VideoPlayer(url: String) {
-    var isPrepared by remember { mutableStateOf(false) }
+    val videoService = LocalVideoService.current
+    
     Box(
-        modifier = Modifier.fillMaxWidth().height(250.dp).padding(horizontal = 16.dp, vertical = 8.dp).clip(RoundedCornerShape(8.dp)).background(Color.Black),
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(250.dp)
+            .padding(horizontal = 16.dp, vertical = 8.dp)
+            .clip(RoundedCornerShape(8.dp))
+            .background(Color.Black),
         contentAlignment = Alignment.Center
     ) {
-        AndroidView(
-            modifier = Modifier.fillMaxSize(),
-            factory = { context ->
-                android.widget.VideoView(context).apply {
-                    setMediaController(android.widget.MediaController(context))
-                }
-            },
-            update = { videoView ->
-                if (videoView.tag != url) {
-                    videoView.setVideoPath(url)
-                    videoView.tag = url
-                    videoView.setOnPreparedListener { mp ->
-                        mp.seekTo(1)
-                        isPrepared = true
+        if (videoService != null) {
+            val player = videoService.getPlayer()
+            if (player != null) {
+                AndroidView(
+                    factory = { ctx ->
+                        PlayerView(ctx).apply {
+                            this.player = player
+                            useController = true
+                            setBackgroundColor(android.graphics.Color.BLACK)
+                        }
+                    },
+                    modifier = Modifier.fillMaxSize(),
+                    update = { _ ->
+                        val currentMediaUri = player.currentMediaItem?.localConfiguration?.uri?.toString()
+                        if (currentMediaUri != url) {
+                            videoService.playVideo(url)
+                        }
                     }
-                }
+                )
+            } else {
+                CircularProgressIndicator(color = GreenPrimary)
             }
-        )
-        if (!isPrepared) CircularProgressIndicator(color = GreenPrimary)
+        } else {
+            CircularProgressIndicator(color = GreenPrimary)
+        }
     }
 }
