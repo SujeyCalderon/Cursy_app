@@ -98,7 +98,7 @@ class MainActivity : FragmentActivity() {
 
         val isUserLoggedIn = authManager.getAuthToken() != null
         
-        val notificationType = intent.getStringExtra("notification_type")
+        val notificationType = intent.getStringExtra("notification_type") ?: intent.getStringExtra("type")
         val targetId = intent.getStringExtra("target_id")
         
         val startDestination = if (isUserLoggedIn) {
