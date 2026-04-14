@@ -31,24 +31,28 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
 
     override fun onMessageReceived(remoteMessage: RemoteMessage) {
         super.onMessageReceived(remoteMessage)
-        
         Log.d(TAG, "From: ${remoteMessage.from}")
+        Log.d(TAG, "Data payload: ${remoteMessage.data}") // ✅ Log completo para debug
 
-        // Primero, intentamos leer desde el Data Payload (más fiable en background)
-        if (remoteMessage.data.isNotEmpty()) {
-            val title = remoteMessage.data["title"] ?: "Cursy"
-            val body = remoteMessage.data["body"] ?: ""
-            val type = remoteMessage.data["type"]
-            val targetId = remoteMessage.data["target_id"]
-            Log.d(TAG, "Message Data Body: $body, Type: $type")
-            
+        // ✅ PRIORIDAD 1: Data payload (funciona en foreground y background)
+        val title = remoteMessage.data["title"]
+            ?: remoteMessage.notification?.title
+            ?: "Nuevo curso en Cursy"
+
+        val body = remoteMessage.data["body"]
+            ?: remoteMessage.notification?.body
+            ?: "¡Mira el nuevo contenido disponible!"
+
+        val type = remoteMessage.data["type"]
+        val targetId = remoteMessage.data["course_id"] // ✅ Backend envía "course_id", no "target_id"
+            ?: remoteMessage.data["target_id"]
+
+        Log.d(TAG, "Procesando: title=$title, body=$body, type=$type, targetId=$targetId")
+
+        if (title.isNotBlank() && body.isNotBlank()) {
             handleNotificationDisplayAndSave(title, body, type, targetId)
         } else {
-            // Fallback: Si por alguna razón viene como Notificación (iOS / Consola Firebase)
-            remoteMessage.notification?.let {
-                Log.d(TAG, "Message Notification Body: ${it.body}")
-                handleNotificationDisplayAndSave(it.title ?: "Cursy", it.body ?: "", null, null)
-            }
+            Log.w(TAG, "Notificación ignorada: título o cuerpo vacío")
         }
     }
 
@@ -77,14 +81,23 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
 
     override fun onNewToken(token: String) {
         super.onNewToken(token)
-        Log.d(TAG, "Refreshed token: $token")
-        
+        Log.d(TAG, "Refreshed token: ${token.take(20)}...")
+
+        // ✅ VALIDACIÓN: No enviar token vacío
+        if (token.isBlank()) {
+            Log.e(TAG, "❌ Token recibido está vacío, no se sincroniza")
+            return
+        }
+
         serviceScope.launch {
             try {
-                api.updateFCMToken(com.example.cursy.core.network.FCMTokenRequest(token))
-                Log.d(TAG, "Token FCM sincronizado con el servidor tras refresco")
+                val response = api.updateFCMToken(com.example.cursy.core.network.FCMTokenRequest(token))
+                Log.d(TAG, "✅ Token FCM sincronizado: $response")
             } catch (e: Exception) {
-                Log.e(TAG, "Error sincronizando token FCM tras refresco", e)
+                Log.e(TAG, "❌ Error sincronizando token FCM", e)
+                // ✅ Reintentar en 10 segundos si falla
+                kotlinx.coroutines.delay(10000)
+                onNewToken(token) // Reintentar con mismo token
             }
         }
     }
@@ -104,7 +117,7 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
         )
 
-        val channelId = "cursy_notifications"
+        val channelId = "new_courses_channel"
         val notificationBuilder = NotificationCompat.Builder(this, channelId)
             .setSmallIcon(R.mipmap.ic_launcher)
             .setContentTitle(title)
