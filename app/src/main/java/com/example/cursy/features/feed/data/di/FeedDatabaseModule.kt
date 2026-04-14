@@ -2,6 +2,7 @@ package com.example.cursy.features.feed.data.di
 
 import android.content.Context
 import androidx.room.Room
+import com.example.cursy.features.feed.data.local.DownloadDao
 import com.example.cursy.features.feed.data.local.FeedDao
 import com.example.cursy.features.feed.data.local.FeedDatabase
 import dagger.Module
@@ -29,4 +30,9 @@ object FeedDatabaseModule {
     @Provides
     @Singleton
     fun provideFeedDao(database: FeedDatabase): FeedDao = database.feedDao()
+
+    // davity: Proveyendo el DownloadDao para la inyección de dependencias
+    @Provides
+    @Singleton
+    fun provideDownloadDao(database: FeedDatabase): DownloadDao = database.downloadDao()
 }
