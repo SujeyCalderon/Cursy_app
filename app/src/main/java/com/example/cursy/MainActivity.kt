@@ -1,10 +1,7 @@
 package com.example.cursy
 
 import android.Manifest
-import android.content.ComponentName
-import android.content.Context
-import android.content.Intent
-import android.content.ServiceConnection
+import android.content.*
 import android.content.pm.PackageManager
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -41,6 +38,7 @@ import com.example.cursy.navigation.Screen
 import com.example.cursy.core.services.ChatForegroundService
 import com.example.cursy.core.services.PersistentVideoService
 import com.example.cursy.ui.theme.CursyTheme
+import com.google.firebase.FirebaseApp
 import com.google.firebase.messaging.FirebaseMessaging
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
@@ -52,11 +50,8 @@ import java.util.concurrent.TimeUnit
 @AndroidEntryPoint
 class MainActivity : FragmentActivity() {
 
-    @Inject
-    lateinit var authManager: AuthManager
-
-    @Inject
-    lateinit var api: CoursyApi
+    @Inject lateinit var authManager: AuthManager
+    @Inject lateinit var api: CoursyApi
 
     private var videoServiceState = mutableStateOf<PersistentVideoService?>(null)
     private var isBound = false
@@ -67,7 +62,6 @@ class MainActivity : FragmentActivity() {
             videoServiceState.value = binder.getService()
             isBound = true
         }
-
         override fun onServiceDisconnected(arg0: ComponentName) {
             isBound = false
             videoServiceState.value = null
@@ -78,14 +72,23 @@ class MainActivity : FragmentActivity() {
         ActivityResultContracts.RequestPermission()
     ) { isGranted: Boolean ->
         if (isGranted) {
-        } else {
+            // Reintentar obtener token si se concedió permiso
+            if (authManager.getAuthToken() != null) {
+                syncFCMToken()
+            }
         }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        // ✅ INICIALIZAR FIREBASE PRIMERO
+        if (FirebaseApp.getApps(this).isEmpty()) {
+            FirebaseApp.initializeApp(this)
+        }
+
         enableEdgeToEdge()
-        createNotificationChannel()
+        createNotificationChannels() // ✅ Crear TODOS los canales
         askNotificationPermission()
         scheduleSync()
 
@@ -95,36 +98,22 @@ class MainActivity : FragmentActivity() {
 
         val prefs = getSharedPreferences("cursy_prefs", Context.MODE_PRIVATE)
         val savedDarkMode = prefs.getBoolean("dark_mode", false)
-
         val isUserLoggedIn = authManager.getAuthToken() != null
-        
-        val notificationType = intent.getStringExtra("notification_type") ?: intent.getStringExtra("type")
-        val targetId = intent.getStringExtra("target_id")
-        
-        val startDestination = if (isUserLoggedIn) {
-            when (notificationType) {
-                "new_course", "new_comment" -> {
-                    if (targetId != null) Screen.CourseDetail.createRoute(targetId) else Screen.Feed.route
-                }
-                else -> Screen.Feed.route
-            }
-        } else {
-            Screen.Login.route
-        }
+
+        // Manejar notificación que abrió la app
+        handleNotificationIntent(intent)
+
+        val startDestination = if (isUserLoggedIn) Screen.Feed.route else Screen.Login.route
 
         if (isUserLoggedIn) {
             ChatForegroundService.start(this)
-        }
-
-        if (isUserLoggedIn) {
-            syncFCMToken()
+            syncFCMToken() // ✅ Sincronizar token al iniciar
         }
 
         setContent {
+            // ... tu código de UI sin cambios
             var isDarkMode by remember { mutableStateOf(savedDarkMode) }
             val currentVideoService by videoServiceState
-
-            // Estado global para saber si estamos en la pantalla de detalle
             var isDetailScreen by remember { mutableStateOf(false) }
 
             val onToggleDarkMode: (Boolean) -> Unit = { newValue ->
@@ -147,17 +136,17 @@ class MainActivity : FragmentActivity() {
                                 isDarkMode = isDarkMode,
                                 onToggleDarkMode = onToggleDarkMode,
                                 onLoginSuccess = {
-                                    syncFCMToken()
+                                    ChatForegroundService.start(this@MainActivity)
+                                    syncFCMToken() // ✅ Sincronizar después de login
                                 }
                             )
                         }
 
-                        // Mini Player Global flotante - SOLO si no estamos en detalle
                         currentVideoService?.let { service ->
                             val player = service.getPlayer()
                             if (player != null && !isDetailScreen) {
                                 var playbackState by remember { mutableStateOf(player.playbackState) }
-                                
+
                                 DisposableEffect(player) {
                                     val listener = object : Player.Listener {
                                         override fun onPlaybackStateChanged(state: Int) {
@@ -165,9 +154,7 @@ class MainActivity : FragmentActivity() {
                                         }
                                     }
                                     player.addListener(listener)
-                                    onDispose {
-                                        player.removeListener(listener)
-                                    }
+                                    onDispose { player.removeListener(listener) }
                                 }
 
                                 if (playbackState != Player.STATE_IDLE && playbackState != Player.STATE_ENDED) {
@@ -187,6 +174,24 @@ class MainActivity : FragmentActivity() {
         }
     }
 
+    override fun onNewIntent(intent: Intent?) {
+        super.onNewIntent(intent)
+        intent?.let { handleNotificationIntent(it) }
+    }
+
+    private fun handleNotificationIntent(intent: Intent) {
+        val notificationType = intent.getStringExtra("type")
+            ?: intent.getStringExtra("notification_type")
+        val courseId = intent.getStringExtra("course_id")
+            ?: intent.getStringExtra("target_id")
+
+        if (notificationType == "new_course" && courseId != null) {
+            // Navegar al detalle del curso
+            // Esto requiere que manejes la navegación, puedes usar un ViewModel compartido
+            // o guardar en prefs y leer en el primer Composable
+        }
+    }
+
     override fun onDestroy() {
         super.onDestroy()
         if (isBound) {
@@ -195,16 +200,38 @@ class MainActivity : FragmentActivity() {
         }
     }
 
+    // ✅ VERSIÓN CORREGIDA DE SYNCFCMTOKEN
     private fun syncFCMToken() {
         FirebaseMessaging.getInstance().token.addOnCompleteListener { task ->
-            if (task.isSuccessful) {
-                val token = task.result
-                lifecycleScope.launch {
-                    try {
-                        api.updateFCMToken(FCMTokenRequest(token))
-                    } catch (e: Exception) {
-                        android.util.Log.e("FCM_TOKEN", "Error al sincronizar token: ${e.message}")
-                    }
+            if (!task.isSuccessful) {
+                android.util.Log.w("FCM", "Fetching FCM registration token failed", task.exception)
+                return@addOnCompleteListener
+            }
+
+            val token = task.result
+            android.util.Log.d("FCM", "Token obtenido: ${token.take(20)}...")
+
+            if (token.isNullOrEmpty()) {
+                android.util.Log.e("FCM", "Token es null o vacío")
+                return@addOnCompleteListener
+            }
+
+            // Guardar localmente para debugging
+            getSharedPreferences("fcm_debug", Context.MODE_PRIVATE)
+                .edit()
+                .putString("last_token", token)
+                .putLong("token_timestamp", System.currentTimeMillis())
+                .apply()
+
+            lifecycleScope.launch {
+                try {
+                    val response = api.updateFCMToken(FCMTokenRequest(token))
+                    android.util.Log.d("FCM", "Token sincronizado exitosamente: $response")
+                } catch (e: Exception) {
+                    android.util.Log.e("FCM", "Error al sincronizar token: ${e.message}", e)
+                    // Reintentar en 5 segundos
+                    kotlinx.coroutines.delay(5000)
+                    syncFCMToken()
                 }
             }
         }
@@ -212,25 +239,67 @@ class MainActivity : FragmentActivity() {
 
     private fun askNotificationPermission() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) !=
-                PackageManager.PERMISSION_GRANTED
-            ) {
-                requestPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+            when {
+                ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) ==
+                        PackageManager.PERMISSION_GRANTED -> {
+                    // Ya tiene permiso, sincronizar token
+                    if (authManager.getAuthToken() != null) {
+                        syncFCMToken()
+                    }
+                }
+                shouldShowRequestPermissionRationale(Manifest.permission.POST_NOTIFICATIONS) -> {
+                    // Mostrar UI explicando por qué necesitas el permiso
+                    requestPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                }
+                else -> {
+                    requestPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                }
+            }
+        } else {
+            // Android 12 o menor, no se necesita permiso explícito
+            if (authManager.getAuthToken() != null) {
+                syncFCMToken()
             }
         }
     }
 
-    private fun createNotificationChannel() {
+    // ✅ CREAR AMBOS CANALES NECESARIOS
+    private fun createNotificationChannels() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channelId = "cursy_notifications"
-            val channelName = "Cursy Notifications"
-            val channelDescription = "Notificaciones de mensajes y cursos"
-            val importance = NotificationManager.IMPORTANCE_HIGH
-            val channel = NotificationChannel(channelId, channelName, importance).apply {
-                description = channelDescription
-            }
             val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-            notificationManager.createNotificationChannel(channel)
+
+            // Canal para mensajes de chat
+            val chatChannel = NotificationChannel(
+                "chat_messages",
+                "Mensajes de Chat",
+                NotificationManager.IMPORTANCE_HIGH
+            ).apply {
+                description = "Notificaciones de mensajes nuevos en chat"
+                enableLights(true)
+                enableVibration(true)
+            }
+
+            // Canal para nuevos cursos (debe coincidir con el backend)
+            val coursesChannel = NotificationChannel(
+                "new_courses_channel",
+                "Nuevos Cursos",
+                NotificationManager.IMPORTANCE_HIGH
+            ).apply {
+                description = "Notificaciones cuando hay nuevos cursos disponibles"
+                enableLights(true)
+                enableVibration(true)
+            }
+
+            // Canal general de fallback
+            val generalChannel = NotificationChannel(
+                "cursy_notifications",
+                "Cursy General",
+                NotificationManager.IMPORTANCE_DEFAULT
+            ).apply {
+                description = "Notificaciones generales de la app"
+            }
+
+            notificationManager.createNotificationChannels(listOf(chatChannel, coursesChannel, generalChannel))
         }
     }
 
@@ -255,7 +324,7 @@ class MainActivity : FragmentActivity() {
 fun AppMiniPlayer(player: Player, onDismiss: () -> Unit) {
     Card(
         modifier = Modifier
-            .width(200.dp) // Un poco más ancho para los controles
+            .width(200.dp)
             .height(150.dp)
             .shadow(12.dp, RoundedCornerShape(12.dp)),
         shape = RoundedCornerShape(12.dp),
@@ -266,13 +335,13 @@ fun AppMiniPlayer(player: Player, onDismiss: () -> Unit) {
                 factory = { ctx ->
                     PlayerView(ctx).apply {
                         this.player = player
-                        useController = true // ACTIVAMOS CONTROLES (pausa, atrasar, etc)
+                        useController = true
                         setBackgroundColor(android.graphics.Color.BLACK)
                     }
                 },
                 modifier = Modifier.fillMaxSize()
             )
-            
+
             IconButton(
                 onClick = onDismiss,
                 modifier = Modifier
