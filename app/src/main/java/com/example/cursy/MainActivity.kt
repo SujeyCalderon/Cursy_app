@@ -8,6 +8,7 @@ import android.app.NotificationManager
 import android.os.Build
 import android.os.Bundle
 import android.os.IBinder
+import android.util.Log
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
@@ -268,38 +269,20 @@ class MainActivity : FragmentActivity() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
-            // Canal para mensajes de chat
-            val chatChannel = NotificationChannel(
-                "chat_messages",
-                "Mensajes de Chat",
-                NotificationManager.IMPORTANCE_HIGH
-            ).apply {
-                description = "Notificaciones de mensajes nuevos en chat"
-                enableLights(true)
-                enableVibration(true)
-            }
-
-            // Canal para nuevos cursos (debe coincidir con el backend)
+            // Canal para nuevos cursos (CRÍTICO)
             val coursesChannel = NotificationChannel(
                 "new_courses_channel",
                 "Nuevos Cursos",
                 NotificationManager.IMPORTANCE_HIGH
             ).apply {
-                description = "Notificaciones cuando hay nuevos cursos disponibles"
+                description = "Notificaciones cuando alguien sube un nuevo curso"
                 enableLights(true)
                 enableVibration(true)
+                setShowBadge(true)
             }
 
-            // Canal general de fallback
-            val generalChannel = NotificationChannel(
-                "cursy_notifications",
-                "Cursy General",
-                NotificationManager.IMPORTANCE_DEFAULT
-            ).apply {
-                description = "Notificaciones generales de la app"
-            }
-
-            notificationManager.createNotificationChannels(listOf(chatChannel, coursesChannel, generalChannel))
+            notificationManager.createNotificationChannels(listOf(coursesChannel))
+            Log.d("MainActivity", "✅ Canal new_courses_channel creado")
         }
     }
 

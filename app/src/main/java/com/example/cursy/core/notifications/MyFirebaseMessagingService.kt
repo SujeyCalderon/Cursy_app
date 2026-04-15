@@ -108,37 +108,53 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
 
     private fun sendNotification(title: String, messageBody: String, type: String?, targetId: String?) {
         val intent = Intent(this, MainActivity::class.java).apply {
-            addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
+            addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
             putExtra("notification_type", type)
             putExtra("target_id", targetId)
+            putExtra("course_id", targetId) // ✅ AMBOS: course_id y target_id
         }
         val pendingIntent = PendingIntent.getActivity(
-            this, 0, intent,
+            this,
+            System.currentTimeMillis().toInt(), // ✅ ID único para cada notificación
+            intent,
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
         )
 
         val channelId = "new_courses_channel"
+
+        // ✅ NOTIFICATION BUILDER CORREGIDO
         val notificationBuilder = NotificationCompat.Builder(this, channelId)
-            .setSmallIcon(R.mipmap.ic_launcher)
+            .setSmallIcon(R.drawable.ic_notification) // ✅ DEBE ser drawable, no mipmap
             .setContentTitle(title)
             .setContentText(messageBody)
             .setAutoCancel(true)
             .setContentIntent(pendingIntent)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setCategory(NotificationCompat.CATEGORY_SOCIAL) // ✅ Categoría apropiada
+            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC) // ✅ Mostrar en lock screen
 
         val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
+        // ✅ CANAL CON IMPORTANCIA ALTA
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
                 channelId,
-                "Cursy Notifications",
+                "Nuevos Cursos", // ✅ Nombre descriptivo
                 NotificationManager.IMPORTANCE_HIGH
-            )
+            ).apply {
+                description = "Notificaciones cuando alguien sube un nuevo curso"
+                enableLights(true)
+                lightColor = android.graphics.Color.RED
+                enableVibration(true)
+                vibrationPattern = longArrayOf(0, 500, 200, 500)
+                setShowBadge(true)
+            }
             notificationManager.createNotificationChannel(channel)
         }
 
         val notificationId = System.currentTimeMillis().toInt()
         notificationManager.notify(notificationId, notificationBuilder.build())
+        Log.d(TAG, "🔔 Notificación mostrada: $title - $messageBody")
     }
 
     companion object {
