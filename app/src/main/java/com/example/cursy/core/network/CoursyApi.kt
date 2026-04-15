@@ -97,6 +97,13 @@ interface CoursyApi {
         @Path("courseId") courseId: String,
         @Body body: com.example.cursy.features.Review.Data.Remote.Dto.CreateCommentRequest
     ): com.example.cursy.features.Review.Data.Remote.Dto.CreateCommentResponse
+
+    @DELETE("courses/{courseId}/comments/{commentId}")
+    suspend fun deleteComment(
+        @Path("courseId") courseId: String,
+        @Path("commentId") commentId: String
+    ): MessageResponse
+
     @POST("auth/fcm-token")
     suspend fun updateFCMToken(@Body request: FCMTokenRequest): MessageResponse
 }

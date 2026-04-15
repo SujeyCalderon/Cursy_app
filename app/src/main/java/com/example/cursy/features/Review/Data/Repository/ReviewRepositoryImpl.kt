@@ -31,4 +31,13 @@ class ReviewRepositoryImpl @Inject constructor(
             Result.failure(e)
         }
     }
+
+    override suspend fun deleteComment(courseId: String, commentId: String): Result<Unit> {
+        return try {
+            api.deleteComment(courseId, commentId)
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
 }

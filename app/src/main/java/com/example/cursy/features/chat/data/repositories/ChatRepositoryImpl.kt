@@ -39,7 +39,6 @@ import com.example.cursy.R
 import com.example.cursy.core.Hardware.Domain.DeviceNotifier
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
-import javax.inject.Singleton
 import okhttp3.Request
 import okhttp3.Response
 import okhttp3.WebSocket
@@ -181,18 +180,52 @@ class ChatRepositoryImpl @Inject constructor(
                     }
 
                     if (wsMessage.type == "new_course") {
-                        val courseTitle = wsMessage.content
-                            ?.removePrefix("A new course has been published: ")
-                            ?: "Nuevo curso disponible"
+                        val myId = authManager.getCurrentUserId()
 
-                        repositoryScope.launch {
-                            _globalEvents.emit(wsMessage.type ?: "")
+                        // ✅ No notificar al propio autor
+                        if (wsMessage.author_id == myId) {
+                            repositoryScope.launch { _globalEvents.emit("new_course") }
+                            return
                         }
 
-                        // Mostrar notificación local igual que el chat
+                        val courseTitle = wsMessage.content ?: "Nuevo curso disponible"
+                        val authorName = wsMessage.author_name?.takeIf { it.isNotBlank() } ?: "un usuario"
+
+                        repositoryScope.launch { _globalEvents.emit("new_course") }
+
                         showLocalNotification(
-                            "¡Nuevo curso publicado!",
+                            "$authorName subió un nuevo curso",
                             courseTitle
+                        )
+                        return
+                    }
+
+                    if (wsMessage.type == "new_comment") {
+                        val myId = authManager.getCurrentUserId()
+
+                        // Solo mostrar notificación si soy el autor del curso
+                        if (wsMessage.targetUser != myId) return
+
+                        val commenterName = wsMessage.commenterName ?: "Alguien"
+                        val courseTitle = wsMessage.courseTitle ?: "tu curso"
+                        val commentContent = wsMessage.content.take(50) // truncar si es muy largo
+
+                        repositoryScope.launch {
+                            _globalEvents.emit("new_comment")
+
+                            notificationDao.insertNotification(
+                                NotificationEntity(
+                                    title = "$commenterName comentó en tu curso",
+                                    message = "\"$commentContent\" en $courseTitle",
+                                    timestamp = System.currentTimeMillis(),
+                                    isRead = false
+                                )
+                            )
+                        }
+
+                        showLocalNotification(
+                            "$commenterName comentó en tu curso",
+                            "\"$commentContent\" en $courseTitle"
                         )
                         return
                     }
