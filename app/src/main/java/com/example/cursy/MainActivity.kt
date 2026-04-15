@@ -89,7 +89,7 @@ class MainActivity : FragmentActivity() {
         }
 
         enableEdgeToEdge()
-        createNotificationChannels() // ✅ Crear TODOS los canales
+        createNotificationChannels()
         askNotificationPermission()
         scheduleSync()
 
@@ -108,7 +108,6 @@ class MainActivity : FragmentActivity() {
 
         if (isUserLoggedIn) {
             ChatForegroundService.start(this)
-            syncFCMToken() // ✅ Sincronizar token al iniciar
         }
 
         setContent {
@@ -181,15 +180,19 @@ class MainActivity : FragmentActivity() {
     }
 
     private fun handleNotificationIntent(intent: Intent) {
-        val notificationType = intent.getStringExtra("type")
+        val type = intent.getStringExtra("type")
             ?: intent.getStringExtra("notification_type")
         val courseId = intent.getStringExtra("course_id")
             ?: intent.getStringExtra("target_id")
 
-        if (notificationType == "new_course" && courseId != null) {
-            // Navegar al detalle del curso
-            // Esto requiere que manejes la navegación, puedes usar un ViewModel compartido
-            // o guardar en prefs y leer en el primer Composable
+        Log.d("MainActivity", "Notification intent: type=$type, courseId=$courseId")
+
+        if (type == "new_course" && !courseId.isNullOrEmpty()) {
+            // Guardar en prefs para que AppNavigation lo lea
+            getSharedPreferences("pending_navigation", Context.MODE_PRIVATE)
+                .edit()
+                .putString("course_id", courseId)
+                .apply()
         }
     }
 
