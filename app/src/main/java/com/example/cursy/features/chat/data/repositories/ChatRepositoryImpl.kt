@@ -180,10 +180,20 @@ class ChatRepositoryImpl @Inject constructor(
                         return
                     }
 
-                    if (wsMessage.type == "new_course" || wsMessage.type == "new_comment") {
+                    if (wsMessage.type == "new_course") {
+                        val courseTitle = wsMessage.content
+                            ?.removePrefix("A new course has been published: ")
+                            ?: "Nuevo curso disponible"
+
                         repositoryScope.launch {
                             _globalEvents.emit(wsMessage.type ?: "")
                         }
+
+                        // Mostrar notificación local igual que el chat
+                        showLocalNotification(
+                            "¡Nuevo curso publicado!",
+                            courseTitle
+                        )
                         return
                     }
 
