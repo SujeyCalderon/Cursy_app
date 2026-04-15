@@ -1,4 +1,4 @@
-package com.example.cursy.features.Review.Domain.Usecases
+package com.example.cursy.features.Review.Domain.UseCases
 
 import com.example.cursy.features.Review.Domain.Repository.ReviewRepository
 import javax.inject.Inject

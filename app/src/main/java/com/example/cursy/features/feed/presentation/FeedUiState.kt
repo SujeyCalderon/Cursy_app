@@ -8,5 +8,6 @@ data class FeedUiState(
     val error: String? = null,
     val showingCachedFeed: Boolean = false,
     val showPublishFirstDialog: Boolean = false,
-    val newPostsCount: Int = 0
+    val newPostsCount: Int = 0,
+    val unreadNotificationsCount: Int = 0
 )

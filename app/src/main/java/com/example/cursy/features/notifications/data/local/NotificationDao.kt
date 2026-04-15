@@ -16,4 +16,7 @@ interface NotificationDao {
 
     @Query("UPDATE notifications SET isRead = 1 WHERE id = :notificationId")
     suspend fun markAsRead(notificationId: Int)
+
+    @Query("UPDATE notifications SET isRead = 1 WHERE isRead = 0")
+    suspend fun markAllAsRead()
 }

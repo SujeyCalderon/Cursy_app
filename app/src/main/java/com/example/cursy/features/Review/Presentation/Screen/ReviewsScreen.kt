@@ -9,6 +9,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Send
 import androidx.compose.material3.*
@@ -25,7 +26,7 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
-import com.example.cursy.features.Review.Presentation.CommentUiModel  // <- aquí el import correcto
+import com.example.cursy.features.Review.Presentation.CommentUiModel
 import com.example.cursy.features.Review.Presentation.Viewmodels.ReviewsViewModel
 import kotlinx.coroutines.launch
 
@@ -206,7 +207,10 @@ fun ReviewsScreen(
                         )
                     }
                     items(uiState.comments) { comment ->
-                        CommentCard(comment = comment)
+                        CommentCard(
+                            comment = comment,
+                            onDelete = { viewModel.deleteComment(courseId, comment.id) }
+                        )
                     }
                 }
             }
@@ -215,7 +219,10 @@ fun ReviewsScreen(
 }
 
 @Composable
-fun CommentCard(comment: CommentUiModel) {
+fun CommentCard(
+    comment: CommentUiModel,
+    onDelete: () -> Unit = {}
+) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
@@ -259,11 +266,14 @@ fun CommentCard(comment: CommentUiModel) {
                     )
                 }
 
-                Box(
-                    modifier = Modifier
-                        .size(8.dp)
-                        .background(GreenPrimary, CircleShape)
-                )
+                IconButton(onClick = onDelete) {
+                    Icon(
+                        imageVector = Icons.Default.Delete,
+                        contentDescription = "Eliminar comentario",
+                        tint = Color.Gray.copy(alpha = 0.6f),
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
             }
 
             Spacer(modifier = Modifier.height(12.dp))
@@ -283,8 +293,6 @@ fun CommentCard(comment: CommentUiModel) {
     }
 }
 
-//scroll
-// Versión embebida sin Scaffold ni LazyColumn — para usar dentro de CourseDetailScreen
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EmbeddedReviews(
@@ -315,7 +323,6 @@ fun EmbeddedReviews(
         }
     }
 
-    // Botton
     if (showSheet) {
         ModalBottomSheet(
             onDismissRequest = { showSheet = false },
@@ -362,7 +369,6 @@ fun EmbeddedReviews(
         }
     }
 
-    //
     Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
 
         SnackbarHost(snackbarHostState)
@@ -405,7 +411,10 @@ fun EmbeddedReviews(
                 )
 
                 uiState.comments.forEach { comment ->
-                    CommentCard(comment = comment)
+                    CommentCard(
+                        comment = comment,
+                        onDelete = { viewModel.deleteComment(courseId, comment.id) }
+                    )
                     Spacer(modifier = Modifier.height(12.dp))
                 }
             }
@@ -413,7 +422,6 @@ fun EmbeddedReviews(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Botón
         OutlinedButton(
             onClick = { showSheet = true },
             modifier = Modifier.fillMaxWidth().height(50.dp),

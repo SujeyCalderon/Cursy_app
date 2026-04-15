@@ -3,7 +3,9 @@ package com.example.cursy.features.Review.Presentation.Viewmodels
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.cursy.core.di.AuthManager
 import com.example.cursy.features.Review.Domain.UseCases.CreateCommentUseCase
+import com.example.cursy.features.Review.Domain.UseCases.DeleteCommentUseCase
 import com.example.cursy.features.Review.Domain.UseCases.GetCommentsUseCase
 import com.example.cursy.features.Review.Presentation.CommentUiModel
 import com.example.cursy.features.Review.Presentation.ReviewUiState
@@ -19,7 +21,9 @@ import javax.inject.Inject
 @HiltViewModel
 class ReviewsViewModel @Inject constructor(
     private val getCommentsUseCase: GetCommentsUseCase,
-    private val createCommentUseCase: CreateCommentUseCase
+    private val createCommentUseCase: CreateCommentUseCase,
+    private val deleteCommentUseCase: DeleteCommentUseCase,
+    private val authManager: AuthManager
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ReviewUiState())
@@ -28,6 +32,8 @@ class ReviewsViewModel @Inject constructor(
     fun onCommentTextChange(value: String) {
         _uiState.value = _uiState.value.copy(commentText = value)
     }
+
+    fun getCurrentUserId(): String? = authManager.getCurrentUserId()
 
     fun loadComments(courseId: String) {
         viewModelScope.launch {
@@ -39,6 +45,7 @@ class ReviewsViewModel @Inject constructor(
                         comments  = reviews.map { review ->
                             CommentUiModel(
                                 id        = review.id,
+                                userId    = review.userId,
                                 userName  = review.userName,
                                 userImage = review.userImage,
                                 content   = review.content,
@@ -74,6 +81,7 @@ class ReviewsViewModel @Inject constructor(
                         comments    = listOf(
                             CommentUiModel(
                                 id        = review.id,
+                                userId    = review.userId,
                                 userName  = review.userName,
                                 userImage = review.userImage,
                                 content   = review.content,
@@ -86,6 +94,23 @@ class ReviewsViewModel @Inject constructor(
                     _uiState.value = _uiState.value.copy(
                         isSending = false,
                         error     = "Error al enviar el comentario"
+                    )
+                }
+            )
+        }
+    }
+
+    fun deleteComment(courseId: String, commentId: String) {
+        viewModelScope.launch {
+            deleteCommentUseCase(courseId, commentId).fold(
+                onSuccess = {
+                    _uiState.value = _uiState.value.copy(
+                        comments = _uiState.value.comments.filter { it.id != commentId }
+                    )
+                },
+                onFailure = {
+                    _uiState.value = _uiState.value.copy(
+                        error = "Error al eliminar el comentario"
                     )
                 }
             )

@@ -11,14 +11,17 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 import com.example.cursy.features.feed.domain.SyncManager
-
 import com.example.cursy.features.chat.domain.repositories.ChatRepository
+import com.example.cursy.features.notifications.domain.usecases.GetNotificationsUseCase
+import com.example.cursy.features.notifications.domain.usecases.MarkAllNotificationsAsReadUseCase
 
 @HiltViewModel
 class FeedViewModel @Inject constructor(
     private val getFeedUseCase: GetFeedUseCase,
     private val chatRepository: ChatRepository,
-    private val syncManager: SyncManager
+    private val syncManager: SyncManager,
+    private val getNotificationsUseCase: GetNotificationsUseCase,
+    private val markAllNotificationsAsReadUseCase: MarkAllNotificationsAsReadUseCase
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(FeedUiState())
@@ -27,6 +30,16 @@ class FeedViewModel @Inject constructor(
     init {
         loadFeed()
         observeGlobalEvents()
+        observeNotifications()
+    }
+
+    private fun observeNotifications() {
+        viewModelScope.launch {
+            getNotificationsUseCase().collect { notifications ->
+                val unreadCount = notifications.count { !it.isRead }
+                _uiState.update { it.copy(unreadNotificationsCount = unreadCount) }
+            }
+        }
     }
 
     private fun observeGlobalEvents() {
@@ -36,6 +49,12 @@ class FeedViewModel @Inject constructor(
                     loadFeed()
                 }
             }
+        }
+    }
+
+    fun markNotificationsAsRead() {
+        viewModelScope.launch {
+            markAllNotificationsAsReadUseCase()
         }
     }
 

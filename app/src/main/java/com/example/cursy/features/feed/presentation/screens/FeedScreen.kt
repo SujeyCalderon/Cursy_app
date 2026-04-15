@@ -62,12 +62,28 @@ fun FeedScreen(
                     )
                 },
                 actions = {
-                    IconButton(onClick = onNotificationsClick) {
-                        Icon(
-                            imageVector = Icons.Default.Notifications,
-                            contentDescription = "Notificaciones",
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+                    IconButton(onClick = {
+                        viewModel.markNotificationsAsRead()
+                        onNotificationsClick()
+                    }) {
+                        BadgedBox(
+                            badge = {
+                                if (uiState.unreadNotificationsCount > 0) {
+                                    Badge(
+                                        containerColor = Color.Red,
+                                        contentColor = Color.White
+                                    ) {
+                                        Text(uiState.unreadNotificationsCount.toString())
+                                    }
+                                }
+                            }
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Notifications,
+                                contentDescription = "Notificaciones",
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
                     }
                     Spacer(modifier = Modifier.width(8.dp))
                     Box(
