@@ -139,7 +139,7 @@ fun NotificationItem(
                 .padding(16.dp),
             verticalAlignment = Alignment.Top
         ) {
-            // Indicador de no leído
+
             Box(
                 modifier = Modifier
                     .padding(top = 4.dp, end = 12.dp)

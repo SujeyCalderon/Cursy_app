@@ -1,6 +1,5 @@
 package com.example.cursy.navigation
 
-import android.util.Log
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -30,9 +29,13 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
+import dagger.hilt.android.EntryPointAccessors
+import com.example.cursy.core.di.AuthSessionEntryPoint
+import kotlinx.coroutines.flow.collectLatest
 import com.example.cursy.features.course.presentation.screens.CourseDetailScreen
 import com.example.cursy.features.course.presentation.screens.CreateCourseScreen
 import com.example.cursy.features.course.presentation.viewmodels.CourseDetailViewModel
@@ -56,6 +59,8 @@ import com.example.cursy.features.chat.presentation.screens.MessageScreen
 import com.example.cursy.features.chat.presentation.screens.UserSearchScreen
 import com.example.cursy.features.chat.presentation.viewmodels.ChatViewModel
 import com.example.cursy.features.profile.presentation.screens.EditProfileScreen
+import com.example.cursy.features.feed.presentation.screens.DownloadScreen
+import com.example.cursy.features.feed.presentation.viewmodels.DownloadViewModel
 import kotlinx.coroutines.launch
 
 private val GreenPrimary = Color(0xFF2ECC71)
@@ -82,12 +87,28 @@ sealed class BottomNavItem(
 fun AppNavigation(
     startDestination: String = Screen.Login.route,
     isDarkMode: Boolean = false,
-    onToggleDarkMode: (Boolean) -> Unit = {}
+    onToggleDarkMode: (Boolean) -> Unit = {},
+    onLoginSuccess: () -> Unit = {}
 ) {
     val navController = rememberNavController()
     var userProfileImage by remember { mutableStateOf("") }
     var hasPublishedCourse by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
+    val context = LocalContext.current
+    val authSessionManager = remember(context) {
+        EntryPointAccessors.fromApplication(
+            context.applicationContext,
+            AuthSessionEntryPoint::class.java
+        ).authSessionManager()
+    }
+
+    LaunchedEffect(navController) {
+        authSessionManager.sessionExpiredEvents.collectLatest {
+            navController.navigate(Screen.Login.route) {
+                popUpTo(0) { inclusive = true }
+            }
+        }
+    }
 
     Scaffold(
         bottomBar = { BottomNavigationBar(navController) }
@@ -104,6 +125,7 @@ fun AppNavigation(
                     onLoginSuccess = { token, userId ->
                         authViewModel.setAuthToken(token)
                         authViewModel.setCurrentUserId(userId)
+                        onLoginSuccess() // Sincronizar FCM token
                         navController.navigate(Screen.Feed.route) {
                             popUpTo(Screen.Login.route) { inclusive = true }
                         }
@@ -181,8 +203,6 @@ fun AppNavigation(
                     viewModel = exploreViewModel,
                     onMessageClick = { userId ->
                         chatViewModel.createConversation(userId)
-                        // La navegación ocurre en el LaunchedEffect de arriba
-                        // cuando navigationEvent emite el conversationId
                     }
                 )
             }
@@ -249,6 +269,18 @@ fun AppNavigation(
                     },
                     onSettingsClick    = { navController.navigate(Screen.Settings.route) },
                     onEditProfileClick = { navController.navigate(Screen.EditProfile.route) }
+                )
+            }
+
+            // david: Pantalla de mis descargas (offline)
+            composable(Screen.Downloads.route) {
+                val viewModel: DownloadViewModel = hiltViewModel()
+                DownloadScreen(
+                    viewModel = viewModel,
+                    onNavigateBack = { navController.popBackStack() },
+                    onPlayOffline = { localPath ->
+                        // david: Navegar a un reproductor o manejar la reproducción local
+                    }
                 )
             }
 

@@ -62,12 +62,28 @@ fun FeedScreen(
                     )
                 },
                 actions = {
-                    IconButton(onClick = onNotificationsClick) {
-                        Icon(
-                            imageVector = Icons.Default.Notifications,
-                            contentDescription = "Notificaciones",
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+                    IconButton(onClick = {
+                        viewModel.markNotificationsAsRead()
+                        onNotificationsClick()
+                    }) {
+                        BadgedBox(
+                            badge = {
+                                if (uiState.unreadNotificationsCount > 0) {
+                                    Badge(
+                                        containerColor = Color.Red,
+                                        contentColor = Color.White
+                                    ) {
+                                        Text(uiState.unreadNotificationsCount.toString())
+                                    }
+                                }
+                            }
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Notifications,
+                                contentDescription = "Notificaciones",
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
                     }
                     Spacer(modifier = Modifier.width(8.dp))
                     Box(
@@ -133,7 +149,7 @@ fun FeedScreen(
                         verticalArrangement = Arrangement.Center
                     ) {
                         Text(
-                            text = "😕",
+                            text = "",
                             fontSize = 64.sp
                         )
                         Spacer(modifier = Modifier.height(16.dp))
@@ -163,7 +179,7 @@ fun FeedScreen(
                         verticalArrangement = Arrangement.Center
                     ) {
                         Text(
-                            text = "📚",
+                            text = "",
                             fontSize = 64.sp
                         )
                         Spacer(modifier = Modifier.height(16.dp))
@@ -188,6 +204,45 @@ fun FeedScreen(
                         contentPadding = PaddingValues(16.dp),
                         verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
+                        if (uiState.newPostsCount > 0) {
+                            item {
+                                Surface(
+                                    onClick = { viewModel.clearNewPostsAlert() },
+                                    modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
+                                    shape = MaterialTheme.shapes.medium,
+                                    color = GreenPrimary.copy(alpha = 0.9f),
+                                    contentColor = Color.White
+                                ) {
+                                    Row(
+                                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.Center
+                                    ) {
+                                        Text(
+                                            text = "✨ ${uiState.newPostsCount} nuevas publicaciones",
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                        if (uiState.showingCachedFeed) {
+                            item {
+                                Surface(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    shape = MaterialTheme.shapes.small,
+                                    color = MaterialTheme.colorScheme.surfaceVariant
+                                ) {
+                                    Text(
+                                        text = "Sin conexión · mostrando los últimos cursos guardados",
+                                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                            }
+                        }
                         items(uiState.courses) { course ->
                             CourseCard(
                                 course = course,

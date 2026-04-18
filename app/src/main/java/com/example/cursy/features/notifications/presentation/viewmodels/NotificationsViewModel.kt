@@ -58,17 +58,17 @@ class NotificationsViewModel @Inject constructor(
             try {
                 markNotificationAsReadUseCase(notificationId)
             } catch (e: Exception) {
-                // Manejar error de lectura silenciosamente
+
             }
         }
     }
 
-    // Función exclusiva para demostrar funcionalidad de Room en la evaluación
+
     fun simulateNotification() {
         viewModelScope.launch {
             val count = _uiState.value.notifications.size + 1
             val notification = Notification(
-                id = 0, // Room auto-generará
+                id = 0, 
                 title = "Nueva alerta $count",
                 message = "Esta es una notificación simulada de prueba para mostrar Room.",
                 timestamp = System.currentTimeMillis(),

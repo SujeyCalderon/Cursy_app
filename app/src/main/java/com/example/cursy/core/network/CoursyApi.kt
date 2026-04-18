@@ -85,7 +85,33 @@ interface CoursyApi {
         @Path("id") conversationId: String,
         @Body request: SendMessageRequest
     ): com.example.cursy.features.chat.data.remote.dto.MessageDto
+
+    //COMENTARIOS DE CADA CURSO
+    @GET("courses/{courseId}/comments")
+    suspend fun getComments(
+        @Path("courseId") courseId: String
+    ): com.example.cursy.features.Review.Data.Remote.Dto.GetCommentsResponse
+
+    @POST("courses/{courseId}/comments")
+    suspend fun createComment(
+        @Path("courseId") courseId: String,
+        @Body body: com.example.cursy.features.Review.Data.Remote.Dto.CreateCommentRequest
+    ): com.example.cursy.features.Review.Data.Remote.Dto.CreateCommentResponse
+
+    @DELETE("courses/{courseId}/comments/{commentId}")
+    suspend fun deleteComment(
+        @Path("courseId") courseId: String,
+        @Path("commentId") commentId: String
+    ): MessageResponse
+
+    @POST("auth/fcm-token")
+    suspend fun updateFCMToken(@Body request: FCMTokenRequest): MessageResponse
 }
+
+data class FCMTokenRequest(
+    @SerializedName("fcm_token")
+    val fcmToken: String
+)
 
 data class UsersResponse(
     val users: List<UserResponse>,
@@ -119,6 +145,7 @@ data class RegisterRequest(
 
 data class LoginResponse(
     val message: String,
+    @SerializedName(value = "token", alternate = ["access_token", "accessToken"])
     val token: String,
     val user: UserResponse
 )

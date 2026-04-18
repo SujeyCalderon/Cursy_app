@@ -30,6 +30,7 @@ data class ChatUiState(
     val currentUserId: String? = null,
     val myProfile: com.example.cursy.features.profile.domain.entities.Profile? = null,
     val userStatuses: Map<String, Boolean> = emptyMap(),
+    val typingStatuses: Map<String, Boolean> = emptyMap(),
     val isLoading: Boolean = false,
     val error: String? = null,
     val messageText: String = "",
@@ -61,20 +62,22 @@ class ChatViewModel @Inject constructor(
     init {
         loadConversations()
         loadMyProfile()
-        repository.startSession()
         observeGlobalStatuses()
-        // Respaldo REST para obtener estado en línea (el snapshot WebSocket puede perderse)
         viewModelScope.launch {
             kotlinx.coroutines.delay(1000)
             repository.fetchOnlineUsers()
         }
     }
 
-    // Observa el estado en línea/desconectado de los usuarios
     private fun observeGlobalStatuses() {
         viewModelScope.launch {
             repository.observeUserStatuses().collect { statuses ->
                 _uiState.update { it.copy(userStatuses = statuses) }
+            }
+        }
+        viewModelScope.launch {
+            repository.observeTypingStatuses().collect { typing ->
+                _uiState.update { it.copy(typingStatuses = typing) }
             }
         }
     }
@@ -98,8 +101,8 @@ class ChatViewModel @Inject constructor(
         }
     }
 
-    // Carga mensajes del servidor y observa Room como fuente de verdad
     fun loadMessages(conversationId: String) {
+        repository.updateActiveConversation(conversationId)
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, currentConversationId = conversationId) }
 
@@ -117,7 +120,6 @@ class ChatViewModel @Inject constructor(
 
             _uiState.update { it.copy(isLoading = false) }
 
-            // Observar Room (SSOT): la UI se actualiza automáticamente
             messagesObserverJob?.cancel()
             messagesObserverJob = viewModelScope.launch {
                 repository.observeMessagesFromDb(conversationId).collect { messages ->
@@ -127,7 +129,6 @@ class ChatViewModel @Inject constructor(
         }
     }
 
-    // Envía un mensaje identificando al destinatario de la conversación
     fun sendMessage(conversationId: String, content: String) {
         viewModelScope.launch {
             var receiverId = _uiState.value.currentConversation?.otherUserId
@@ -158,6 +159,20 @@ class ChatViewModel @Inject constructor(
                 _uiState.update { it.copy(error = error.message) }
             }
         }
+    }
+
+    fun sendTypingStatus(isTyping: Boolean) {
+        val receiverId = _uiState.value.currentConversation?.otherUserId
+            ?: _uiState.value.currentMessages.firstOrNull { it.senderId != _uiState.value.currentUserId }?.senderId
+            ?: return
+        
+        viewModelScope.launch {
+            repository.sendTypingStatus(receiverId, isTyping)
+        }
+    }
+
+    fun clearActiveConversation() {
+        repository.updateActiveConversation(null)
     }
 
     fun searchUsers(query: String? = null) {

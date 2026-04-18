@@ -26,4 +26,8 @@ class NotificationRepositoryImpl @Inject constructor(
     override suspend fun markAsRead(notificationId: Int) {
         dao.markAsRead(notificationId)
     }
+
+    override suspend fun markAllAsRead() {
+        dao.markAllAsRead()
+    }
 }

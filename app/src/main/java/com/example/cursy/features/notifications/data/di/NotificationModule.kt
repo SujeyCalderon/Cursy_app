@@ -9,6 +9,7 @@ import com.example.cursy.features.notifications.domain.repositories.Notification
 import com.example.cursy.features.notifications.domain.usecases.GetNotificationsUseCase
 import com.example.cursy.features.notifications.domain.usecases.InsertNotificationUseCase
 import com.example.cursy.features.notifications.domain.usecases.MarkNotificationAsReadUseCase
+import com.example.cursy.core.Hardware.Domain.DeviceNotifier
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -27,7 +28,8 @@ object NotificationModule {
             context,
             NotificationDatabase::class.java,
             "notification_database"
-        ).build()
+        ).fallbackToDestructiveMigration()
+            .build()
     }
 
     @Provides
@@ -50,8 +52,11 @@ object NotificationModule {
 
     @Provides
     @Singleton
-    fun provideInsertNotificationUseCase(repository: NotificationRepository): InsertNotificationUseCase {
-        return InsertNotificationUseCase(repository)
+    fun provideInsertNotificationUseCase(
+        repository: NotificationRepository,
+        deviceNotifier: DeviceNotifier
+    ): InsertNotificationUseCase {
+        return InsertNotificationUseCase(repository, deviceNotifier)
     }
 
     @Provides
