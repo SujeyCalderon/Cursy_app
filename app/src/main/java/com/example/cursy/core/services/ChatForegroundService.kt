@@ -17,10 +17,6 @@ import com.example.cursy.features.chat.domain.repositories.ChatRepository
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 
-/**
- * Foreground Service que mantiene la conexión WebSocket del chat activa
- * incluso cuando la aplicación está en segundo plano o minimizada.
- */
 @AndroidEntryPoint
 class ChatForegroundService : Service() {
 
@@ -43,10 +39,10 @@ class ChatForegroundService : Service() {
         val notification = createNotification()
         startForeground(NOTIFICATION_ID, notification)
 
-        // Iniciar la sesión de WebSocket a través del repositorio
+
         chatRepository.startSession()
 
-        // START_STICKY asegura que el sistema intente recrear el servicio si es matado por falta de memoria
+
         return START_STICKY
     }
 
@@ -92,7 +88,7 @@ class ChatForegroundService : Service() {
             .setContentTitle("Chat de Cursy activo")
             .setContentText("Conectado para recibir mensajes en tiempo real")
             .setSmallIcon(R.mipmap.ic_launcher)
-            .setPriority(NotificationCompat.PRIORITY_LOW) // Prioridad baja para que no sea intrusiva
+            .setPriority(NotificationCompat.PRIORITY_LOW)
             .setOngoing(true)
             .setContentIntent(pendingIntent)
             .build()
@@ -117,9 +113,7 @@ class ChatForegroundService : Service() {
         private const val NOTIFICATION_ID = 1001
         private const val CHANNEL_ID = "chat_presence_channel"
         
-        /**
-         * Método de conveniencia para iniciar el servicio
-         */
+
         fun start(context: Context) {
             val intent = Intent(context, ChatForegroundService::class.java)
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -129,9 +123,7 @@ class ChatForegroundService : Service() {
             }
         }
 
-        /**
-         * Método de conveniencia para detener el servicio
-         */
+
         fun stop(context: Context) {
             val intent = Intent(context, ChatForegroundService::class.java)
             context.stopService(intent)

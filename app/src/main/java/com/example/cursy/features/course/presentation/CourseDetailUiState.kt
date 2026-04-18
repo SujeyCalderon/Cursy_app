@@ -12,7 +12,6 @@ data class CourseDetailUiState(
     val showDeleteDialog: Boolean = false,
     val deleteSuccess: Boolean = false,
     val showMenu: Boolean = false,
-    // david: Campos para rastrear el estado de descarga en la UI
     val downloadStatus: DownloadStatus = DownloadStatus.PENDING,
     val downloadProgress: Int = 0
 )

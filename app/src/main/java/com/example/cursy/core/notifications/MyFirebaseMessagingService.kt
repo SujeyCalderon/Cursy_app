@@ -31,21 +31,31 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
 
     override fun onMessageReceived(remoteMessage: RemoteMessage) {
         super.onMessageReceived(remoteMessage)
-        Log.d(TAG, "✅ onMessageReceived llamado")
+        Log.d(TAG, "onMessageReceived llamado")
         Log.d(TAG, "Data: ${remoteMessage.data}")
-        Log.d(TAG, "Notification: ${remoteMessage.notification}")
-
-        // ✅ Leer siempre desde data payload primero
-        val title = remoteMessage.data["title"]
-            ?: remoteMessage.notification?.title
-            ?: "Nuevo curso en Cursy"
-
-        val body = remoteMessage.data["body"]
-            ?: remoteMessage.notification?.body
-            ?: "¡Mira el nuevo contenido disponible!"
 
         val type = remoteMessage.data["type"] ?: "new_course"
         val courseId = remoteMessage.data["course_id"] ?: remoteMessage.data["target_id"]
+        val userName = remoteMessage.data["user_name"] ?: "Un usuario"
+        val courseName = remoteMessage.data["course_name"] ?: "un nuevo curso"
+
+        val title: String
+        val body: String
+
+        when (type) {
+            "new_course" -> {
+                title = "¡Nuevo curso disponible!"
+                body = "$userName subió un nuevo curso: $courseName"
+            }
+            "new_comment" -> {
+                title = "Nuevo comentario"
+                body = "$userName comentó en tu publicación"
+            }
+            else -> {
+                title = remoteMessage.data["title"] ?: remoteMessage.notification?.title ?: "Cursy"
+                body = remoteMessage.data["body"] ?: remoteMessage.notification?.body ?: "Tienes una nueva notificación"
+            }
+        }
 
         Log.d(TAG, "title=$title | body=$body | type=$type | courseId=$courseId")
 
@@ -56,7 +66,6 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
     private fun showNotification(title: String, body: String, type: String?, courseId: String?) {
         val channelId = "new_courses_channel"
 
-        // Intent que abre la app con los datos del curso
         val intent = Intent(this, MainActivity::class.java).apply {
             addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
             putExtra("type", type)
@@ -72,18 +81,16 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
         )
 
-        // Crear canal si es necesario
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
                 channelId,
-                "Nuevos Cursos",
+                "Notificaciones Cursy",
                 NotificationManager.IMPORTANCE_HIGH
             ).apply {
-                description = "Notificaciones cuando alguien sube un nuevo curso"
+                description = "Notificaciones de cursos y comentarios"
                 enableLights(true)
-                lightColor = android.graphics.Color.RED
+                lightColor = android.graphics.Color.GREEN
                 enableVibration(true)
-                vibrationPattern = longArrayOf(0, 500, 200, 500)
                 setShowBadge(true)
             }
             val manager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
@@ -98,17 +105,14 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
             .setContentIntent(pendingIntent)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setDefaults(NotificationCompat.DEFAULT_ALL)
-            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .build()
 
         val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        val notificationId = System.currentTimeMillis().toInt()
-        notificationManager.notify(notificationId, notification)
-
-        Log.d(TAG, "🔔 Notificación mostrada: $title")
+        notificationManager.notify(System.currentTimeMillis().toInt(), notification)
     }
 
     private fun saveNotificationLocally(title: String, body: String) {
+
         serviceScope.launch {
             try {
                 notificationDao.insertNotification(
@@ -128,14 +132,11 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
     override fun onNewToken(token: String) {
         super.onNewToken(token)
         if (token.isBlank()) return
-        Log.d(TAG, "Nuevo token: ${token.take(20)}...")
-
         serviceScope.launch {
             try {
                 api.updateFCMToken(com.example.cursy.core.network.FCMTokenRequest(token))
-                Log.d(TAG, "✅ Token sincronizado")
             } catch (e: Exception) {
-                Log.e(TAG, "❌ Error sincronizando token: ${e.message}")
+                Log.e(TAG, "Error sincronizando token: ${e.message}")
             }
         }
     }

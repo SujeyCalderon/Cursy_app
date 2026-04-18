@@ -2,9 +2,7 @@ package com.example.cursy.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-// ============================================
-// COLORES PRINCIPALES (Cursy Brand)
-// ============================================
+
 
 // Verde primario (el color destacado de la app)
 val GreenPrimary = Color(0xFF2ECC71)

@@ -63,14 +63,12 @@ class ChatViewModel @Inject constructor(
         loadConversations()
         loadMyProfile()
         observeGlobalStatuses()
-        // Respaldo REST para obtener estado en línea (el snapshot WebSocket puede perderse)
         viewModelScope.launch {
             kotlinx.coroutines.delay(1000)
             repository.fetchOnlineUsers()
         }
     }
 
-    // Observa el estado en línea/desconectado de los usuarios
     private fun observeGlobalStatuses() {
         viewModelScope.launch {
             repository.observeUserStatuses().collect { statuses ->
@@ -103,7 +101,6 @@ class ChatViewModel @Inject constructor(
         }
     }
 
-    // Carga mensajes del servidor y observa Room como fuente de verdad
     fun loadMessages(conversationId: String) {
         repository.updateActiveConversation(conversationId)
         viewModelScope.launch {
@@ -123,7 +120,6 @@ class ChatViewModel @Inject constructor(
 
             _uiState.update { it.copy(isLoading = false) }
 
-            // Observar Room (SSOT): la UI se actualiza automáticamente
             messagesObserverJob?.cancel()
             messagesObserverJob = viewModelScope.launch {
                 repository.observeMessagesFromDb(conversationId).collect { messages ->
@@ -133,7 +129,6 @@ class ChatViewModel @Inject constructor(
         }
     }
 
-    // Envía un mensaje identificando al destinatario de la conversación
     fun sendMessage(conversationId: String, content: String) {
         viewModelScope.launch {
             var receiverId = _uiState.value.currentConversation?.otherUserId

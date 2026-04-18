@@ -83,7 +83,7 @@ class MainActivity : FragmentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // ✅ INICIALIZAR FIREBASE PRIMERO
+        // INICIALIZAR FIREBASE
         if (FirebaseApp.getApps(this).isEmpty()) {
             FirebaseApp.initializeApp(this)
         }
@@ -101,7 +101,6 @@ class MainActivity : FragmentActivity() {
         val savedDarkMode = prefs.getBoolean("dark_mode", false)
         val isUserLoggedIn = authManager.getAuthToken() != null
 
-        // Manejar notificación que abrió la app
         handleNotificationIntent(intent)
 
         val startDestination = if (isUserLoggedIn) Screen.Feed.route else Screen.Login.route
@@ -188,7 +187,7 @@ class MainActivity : FragmentActivity() {
         Log.d("MainActivity", "Notification intent: type=$type, courseId=$courseId")
 
         if (type == "new_course" && !courseId.isNullOrEmpty()) {
-            // Guardar en prefs para que AppNavigation lo lea
+
             getSharedPreferences("pending_navigation", Context.MODE_PRIVATE)
                 .edit()
                 .putString("course_id", courseId)
@@ -204,7 +203,7 @@ class MainActivity : FragmentActivity() {
         }
     }
 
-    // ✅ VERSIÓN CORREGIDA DE SYNCFCMTOKEN
+
     private fun syncFCMToken() {
         FirebaseMessaging.getInstance().token.addOnCompleteListener { task ->
             if (!task.isSuccessful) {
@@ -220,7 +219,7 @@ class MainActivity : FragmentActivity() {
                 return@addOnCompleteListener
             }
 
-            // Guardar localmente para debugging
+
             getSharedPreferences("fcm_debug", Context.MODE_PRIVATE)
                 .edit()
                 .putString("last_token", token)
@@ -233,7 +232,7 @@ class MainActivity : FragmentActivity() {
                     android.util.Log.d("FCM", "Token sincronizado exitosamente: $response")
                 } catch (e: Exception) {
                     android.util.Log.e("FCM", "Error al sincronizar token: ${e.message}", e)
-                    // Reintentar en 5 segundos
+
                     kotlinx.coroutines.delay(5000)
                     syncFCMToken()
                 }
@@ -246,13 +245,11 @@ class MainActivity : FragmentActivity() {
             when {
                 ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) ==
                         PackageManager.PERMISSION_GRANTED -> {
-                    // Ya tiene permiso, sincronizar token
                     if (authManager.getAuthToken() != null) {
                         syncFCMToken()
                     }
                 }
                 shouldShowRequestPermissionRationale(Manifest.permission.POST_NOTIFICATIONS) -> {
-                    // Mostrar UI explicando por qué necesitas el permiso
                     requestPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
                 }
                 else -> {
@@ -260,19 +257,18 @@ class MainActivity : FragmentActivity() {
                 }
             }
         } else {
-            // Android 12 o menor, no se necesita permiso explícito
             if (authManager.getAuthToken() != null) {
                 syncFCMToken()
             }
         }
     }
 
-    // ✅ CREAR AMBOS CANALES NECESARIOS
+    // creo mis canales de notificaciones
     private fun createNotificationChannels() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
-            // Canal para nuevos cursos (CRÍTICO)
+            // Canal para new cursos
             val coursesChannel = NotificationChannel(
                 "new_courses_channel",
                 "Nuevos Cursos",
@@ -285,7 +281,7 @@ class MainActivity : FragmentActivity() {
             }
 
             notificationManager.createNotificationChannels(listOf(coursesChannel))
-            Log.d("MainActivity", "✅ Canal new_courses_channel creado")
+            Log.d("MainActivity", "Canal new_courses_channel creado")
         }
     }
 

@@ -12,7 +12,7 @@ interface ChatRepository {
     suspend fun createConversation(otherUserId: String): Result<Conversation>
     suspend fun searchUsers(query: String?): Result<List<ChatUser>>
 
-    // Tiempo real
+
     fun startSession()
     fun endSession()
     fun observeUserStatuses(): StateFlow<Map<String, Boolean>>
@@ -22,9 +22,7 @@ interface ChatRepository {
     suspend fun fetchOnlineUsers()
     suspend fun sendMessage(conversationId: String, receiverId: String, content: String): Result<Unit>
 
-    // Observar mensajes desde Room (fuente de verdad)
     fun observeMessagesFromDb(conversationId: String): Flow<List<Message>>
 
-    // Seguimiento de conversación activa para suprimir notificaciones
     fun updateActiveConversation(conversationId: String?)
 }

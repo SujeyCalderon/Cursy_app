@@ -182,7 +182,7 @@ class ChatRepositoryImpl @Inject constructor(
                     if (wsMessage.type == "new_course") {
                         val myId = authManager.getCurrentUserId()
 
-                        // ✅ No notificar al propio autor
+                        // No notificar al propio autor
                         if (wsMessage.author_id == myId) {
                             repositoryScope.launch { _globalEvents.emit("new_course") }
                             return

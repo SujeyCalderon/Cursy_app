@@ -197,12 +197,12 @@ private fun UserCard(
                 .fillMaxWidth()
                 .padding(16.dp)
         ) {
-            // Avatar e información del usuario
+
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                // Avatar con borde gradiente
+
                 Box(contentAlignment = Alignment.BottomEnd) {
                     Box(
                         modifier = Modifier
@@ -226,7 +226,7 @@ private fun UserCard(
                             contentScale = ContentScale.Crop
                         )
                     }
-                    // Punto verde activo
+
                     Box(
                         modifier = Modifier
                             .size(13.dp)
@@ -245,7 +245,7 @@ private fun UserCard(
 
                 Spacer(modifier = Modifier.width(12.dp))
 
-                // Nombre, universidad y bio
+
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = user.name,
@@ -282,7 +282,6 @@ private fun UserCard(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // Botón seguir e ícono de mensaje
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically

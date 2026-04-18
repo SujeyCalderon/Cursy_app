@@ -49,7 +49,7 @@ class UploadProfileWorker @AssistedInject constructor(
                     return@withContext Result.failure(workDataOf(KEY_ERROR to "Archivo no encontrado"))
                 }
 
-                // OPTIMIZACIÓN: Comprimir imagen antes de subir para que sea más rápido
+                //
                 file = compressImage(file)
 
                 Log.d(TAG, "Subiendo imagen optimizada: ${file.length()} bytes")
@@ -105,14 +105,14 @@ class UploadProfileWorker @AssistedInject constructor(
             val compressedFile = File(context.cacheDir, "temp_profile_comp.jpg")
             val out = FileOutputStream(compressedFile)
             
-            // Comprimimos al 70% de calidad para reducir peso drásticamente sin perder mucha visual
+            // reducir peso
             bitmap.compress(Bitmap.CompressFormat.JPEG, 70, out)
             out.flush()
             out.close()
             compressedFile
         } catch (e: Exception) {
             Log.e(TAG, "Error comprimiendo: ${e.message}")
-            file // Si falla, devolvemos el original
+            file // origen
         }
     }
 

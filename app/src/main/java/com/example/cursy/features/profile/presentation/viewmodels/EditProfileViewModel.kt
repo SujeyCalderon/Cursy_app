@@ -91,11 +91,11 @@ class EditProfileViewModel @Inject constructor(
             )
         }
 
-        // NUEVO: Observar trabajos pendientes al iniciar (por si hay uno en progreso)
+
         observePendingWork()
     }
 
-    // NUEVO: Observar si hay trabajos de subida pendientes al iniciar la pantalla
+
     private fun observePendingWork() {
         workManager.getWorkInfosByTagLiveData("profile_upload").observeForever { workInfos ->
             workInfos?.forEach { workInfo ->
@@ -133,11 +133,10 @@ class EditProfileViewModel @Inject constructor(
     fun onUniversityChange(value: String) { _university.value = value }
 
     fun activarHuella(activity: FragmentActivity) {
-        // ... (mantén el código existente igual)
+
     }
 
     fun desactivarHuella() {
-        // ... (mantén el código existente igual)
     }
 
     fun onHuellaMessageHandled() { _huellaMessage.value = "" }
@@ -152,7 +151,6 @@ class EditProfileViewModel @Inject constructor(
         val hasNewImage = selectedImageFile != null
 
         if (hasNewImage) {
-            // NUEVO: Programar el worker y observar su progreso
             scheduleUploadWorkerAndObserve()
         } else {
             viewModelScope.launch {
@@ -174,7 +172,6 @@ class EditProfileViewModel @Inject constructor(
         }
     }
 
-    // NUEVO: Programar worker y observar su estado en tiempo real
     private fun scheduleUploadWorkerAndObserve() {
         val constraints = Constraints.Builder()
             .setRequiredNetworkType(NetworkType.CONNECTED)
@@ -200,7 +197,6 @@ class EditProfileViewModel @Inject constructor(
 
         currentWorkId = uploadWorkRequest.id
 
-        // NUEVO: Observar este trabajo específico
         workManager.getWorkInfoByIdLiveData(uploadWorkRequest.id)
             .observeForever { workInfo ->
                 workInfo?.let { handleWorkInfo(it) }
@@ -216,7 +212,6 @@ class EditProfileViewModel @Inject constructor(
         _uploadState.value = UploadState.Uploading
     }
 
-    // NUEVO: Manejar los diferentes estados del worker
     private fun handleWorkInfo(workInfo: WorkInfo) {
         when (workInfo.state) {
             WorkInfo.State.SUCCEEDED -> {
@@ -247,7 +242,6 @@ class EditProfileViewModel @Inject constructor(
         _uploadState.value = UploadState.Idle
     }
 
-    // NUEVO: Estados de subida para la UI
     sealed class UploadState {
         object Idle : UploadState()
         object Uploading : UploadState()

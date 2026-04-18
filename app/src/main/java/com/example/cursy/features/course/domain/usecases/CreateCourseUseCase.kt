@@ -13,7 +13,6 @@ class CreateCourseUseCase @javax.inject.Inject constructor(private val repositor
         blocks: List<BlockInput>?,
         publish: Boolean = true
     ): Result<String> {
-        // Crear el curso
         val createResult = repository.createCourse(
             CreateCourseInput(
                 title = title,
@@ -22,8 +21,7 @@ class CreateCourseUseCase @javax.inject.Inject constructor(private val repositor
                 blocks = blocks
             )
         )
-        
-        // Si se creó exitosamente y se debe publicar
+
         return createResult.fold(
             onSuccess = { courseId ->
                 if (publish) {

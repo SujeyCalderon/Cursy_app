@@ -24,8 +24,7 @@ class PersistentVideoService : Service() {
         super.onCreate()
         exoPlayer = ExoPlayer.Builder(this).build()
         exoPlayer?.repeatMode = Player.REPEAT_MODE_OFF
-        
-        // Listener para depuración
+
         exoPlayer?.addListener(object : Player.Listener {
             override fun onPlayerError(error: androidx.media3.common.PlaybackException) {
                 Log.e("PersistentVideoService", "Error de reproducción: ${error.message}")
@@ -50,8 +49,7 @@ class PersistentVideoService : Service() {
     fun playVideo(url: String) {
         exoPlayer?.let { player ->
             val currentUri = player.currentMediaItem?.localConfiguration?.uri?.toString()
-            
-            // Si ya estamos reproduciendo este video, no reiniciamos
+
             if (currentUri == url && player.playbackState != Player.STATE_IDLE) {
                 Log.d("PersistentVideoService", "El video ya se está reproduciendo: $url")
                 player.play()
